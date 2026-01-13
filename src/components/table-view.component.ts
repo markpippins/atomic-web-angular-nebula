@@ -1,0 +1,74 @@
+
+import { Component, input, signal, computed, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { DataService } from '../services/data.service';
+import { Requirement, Status } from '../models/data.models';
+
+@Component({
+  selector: 'app-table-view',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './table-view.component.html'
+})
+export class TableViewComponent {
+  dataService = inject(DataService);
+  requirements = input.required<Requirement[]>();
+  
+  sortField = signal<keyof Requirement | 'date'>('date');
+  sortDirection = signal<'asc' | 'desc'>('desc');
+
+  sortedRequirements = computed(() => {
+    const reqs = [...this.requirements()];
+    const field = this.sortField();
+    const dir = this.sortDirection();
+
+    return reqs.sort((a, b) => {
+      let valA: any = a[field as keyof Requirement];
+      let valB: any = b[field as keyof Requirement];
+
+      if (field === 'date') {
+        valA = a.createdAt;
+        valB = b.createdAt;
+      }
+
+      if (valA < valB) return dir === 'asc' ? -1 : 1;
+      if (valA > valB) return dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  });
+
+  toggleSort(field: keyof Requirement | 'date') {
+    if (this.sortField() === field) {
+      this.sortDirection.update(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortField.set(field);
+      this.sortDirection.set('desc'); // Default to desc for new columns usually better for dates/importance
+    }
+  }
+
+  getPriorityClass(priority: string) {
+    switch(priority) {
+      case 'High': return 'bg-red-100 text-red-800';
+      case 'Medium': return 'bg-yellow-100 text-yellow-800';
+      case 'Low': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  getStatusClass(status: string) {
+     switch(status) {
+      case 'Done': return 'bg-green-100 text-green-800';
+      case 'InProgress': return 'bg-blue-100 text-blue-800';
+      case 'ToDo': return 'bg-gray-100 text-gray-800';
+      case 'Backlog': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  deleteReq(id: string, event: Event) {
+    event.stopPropagation();
+    if(confirm('Are you sure you want to delete this requirement?')) {
+      this.dataService.deleteRequirement(id);
+    }
+  }
+}

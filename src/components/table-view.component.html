@@ -1,0 +1,69 @@
+
+<div class="flex-1 overflow-auto p-6 h-full">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <thead class="bg-gray-50 dark:bg-gray-700/50">
+        <tr>
+          @let fields = [
+            { key: 'title', label: 'Title' },
+            { key: 'status', label: 'Status' },
+            { key: 'priority', label: 'Priority' },
+            { key: 'date', label: 'Created' }
+          ];
+          
+          @for (col of fields; track col.key) {
+             <th 
+                scope="col" 
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                (click)="toggleSort(col.key)"
+             >
+                <div class="flex items-center gap-1">
+                   {{ col.label }}
+                   @if (sortField() === col.key) {
+                     <span class="text-gray-400 dark:text-gray-500">
+                        @if (sortDirection() === 'asc') { ▲ } @else { ▼ }
+                     </span>
+                   }
+                </div>
+             </th>
+          }
+          <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+        @for (req of sortedRequirements(); track req.id) {
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <td class="px-6 py-4">
+              <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ req.title }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">{{ req.description }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+               <span [class]="'px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' + getStatusClass(req.status)">
+                 {{ req.status }}
+               </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span [class]="'px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' + getPriorityClass(req.priority)">
+                 {{ req.priority }}
+               </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              {{ req.createdAt | date:'mediumDate' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+               <button (click)="deleteReq(req.id, $event)" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+            </td>
+          </tr>
+        } @empty {
+            <tr>
+                <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+                   No requirements found matching your criteria.
+                </td>
+            </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

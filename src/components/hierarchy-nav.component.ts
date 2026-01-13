@@ -59,4 +59,25 @@ export class HierarchyNavComponent {
       this.addingFeatureTo.set(null);
     }
   }
+
+  deleteSystem(id: string, event: Event) {
+    event.stopPropagation();
+    if (confirm('Delete this system? All subsystems and requirements inside it will be lost.')) {
+      this.dataService.deleteSystem(id);
+    }
+  }
+
+  deleteSubsystem(systemId: string, subId: string, event: Event) {
+    event.stopPropagation();
+    if (confirm('Delete this subsystem? All features and requirements inside it will be lost.')) {
+      this.dataService.deleteSubsystem(systemId, subId);
+    }
+  }
+
+  deleteFeature(systemId: string, subId: string, featId: string, event: Event) {
+    event.stopPropagation();
+    if (confirm('Delete this feature? All requirements inside it will be lost.')) {
+      this.dataService.deleteFeature(systemId, subId, featId);
+    }
+  }
 }

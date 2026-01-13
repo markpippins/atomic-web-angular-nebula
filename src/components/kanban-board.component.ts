@@ -2,28 +2,28 @@
 import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../services/data.service';
-import { Requirement, Status, Feature } from '../models/data.models';
+import { Requirement, Status } from '../models/data.models';
 import { FormsModule } from '@angular/forms';
+import { BoardViewComponent } from './board-view.component';
+import { TableViewComponent } from './table-view.component';
 
 @Component({
   selector: 'app-kanban-board',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BoardViewComponent, TableViewComponent],
   templateUrl: './kanban-board.component.html'
 })
 export class KanbanBoardComponent {
   dataService = inject(DataService);
-
-  columns: Status[] = ['Backlog', 'ToDo', 'InProgress', 'Done'];
+  
+  viewMode = signal<'board' | 'table'>('board');
+  searchTerm = signal('');
   showModal = signal(false);
 
   // Form State
   newReqTitle = '';
   newReqDesc = '';
   newReqPriority: 'Low' | 'Medium' | 'High' = 'Medium';
-
-  // Drag State
-  draggedReqId: string | null = null;
 
   // Computed Context
   selectedSystem = computed(() => 
@@ -46,30 +46,24 @@ export class KanbanBoardComponent {
     const sId = this.dataService.selectedSubsystemId();
     const sysId = this.dataService.selectedSystemId();
 
-    if (fId) return reqs.filter(r => r.featureId === fId);
-    if (sId) return reqs.filter(r => r.subsystemId === sId);
-    if (sysId) return reqs.filter(r => r.systemId === sysId);
+    // Context Filtering
+    if (fId) reqs = reqs.filter(r => r.featureId === fId);
+    else if (sId) reqs = reqs.filter(r => r.subsystemId === sId);
+    else if (sysId) reqs = reqs.filter(r => r.systemId === sysId);
+
+    // Search Filtering
+    const term = this.searchTerm().toLowerCase();
+    if (term) {
+        reqs = reqs.filter(r => 
+            r.title.toLowerCase().includes(term) || 
+            r.description.toLowerCase().includes(term)
+        );
+    }
+
     return reqs;
   });
 
   canAddRequirement = computed(() => !!this.selectedFeature());
-
-  getRequirementsByStatus(status: Status) {
-    return this.filteredRequirements().filter(r => r.status === status);
-  }
-
-  formatStatus(status: string) {
-    return status.replace(/([A-Z])/g, ' $1').trim();
-  }
-
-  getPriorityColor(priority: string) {
-    switch(priority) {
-      case 'High': return 'bg-red-500';
-      case 'Medium': return 'bg-yellow-500';
-      case 'Low': return 'bg-blue-400';
-      default: return 'bg-gray-300';
-    }
-  }
 
   openAddModal() {
     this.newReqTitle = '';
@@ -79,7 +73,7 @@ export class KanbanBoardComponent {
 
   createManual() {
     const feat = this.selectedFeature();
-    if (!feat) return; // Should be guarded by button
+    if (!feat) return;
 
     this.dataService.addRequirement({
       title: this.newReqTitle,
@@ -91,39 +85,5 @@ export class KanbanBoardComponent {
       featureId: feat.id
     });
     this.showModal.set(false);
-  }
-
-  // --- Drag and Drop Logic ---
-  onDragStart(event: DragEvent, id: string) {
-    this.draggedReqId = id;
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', id);
-    }
-  }
-
-  onDragOver(event: DragEvent) {
-    event.preventDefault(); // Necessary to allow dropping
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
-    }
-  }
-
-  onDrop(event: DragEvent, newStatus: Status) {
-    event.preventDefault();
-    const id = this.draggedReqId;
-    if (id) {
-      this.dataService.updateRequirementStatus(id, newStatus);
-    }
-    this.draggedReqId = null;
-  }
-
-  // --- Click Logic ---
-  moveStatus(req: Requirement, direction: number) {
-     const idx = this.columns.indexOf(req.status);
-     const newIdx = idx + direction;
-     if (newIdx >= 0 && newIdx < this.columns.length) {
-        this.dataService.updateRequirementStatus(req.id, this.columns[newIdx]);
-     }
   }
 }

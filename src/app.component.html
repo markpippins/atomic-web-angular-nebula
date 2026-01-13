@@ -1,12 +1,12 @@
 
-<div class="flex h-screen w-screen overflow-hidden">
+<div class="flex h-screen w-screen overflow-hidden dark:bg-gray-900">
   <!-- Sidebar -->
   <aside class="w-72 flex-shrink-0 h-full">
     <app-hierarchy-nav></app-hierarchy-nav>
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 h-full bg-gray-50 relative">
+  <main class="flex-1 h-full bg-gray-50 dark:bg-gray-900 relative transition-colors">
     <app-kanban-board></app-kanban-board>
   </main>
 </div>

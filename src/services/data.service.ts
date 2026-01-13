@@ -10,6 +10,9 @@ export class DataService {
   readonly systems = signal<System[]>([]);
   readonly requirements = signal<Requirement[]>([]);
   
+  // --- UI State ---
+  readonly darkMode = signal<boolean>(false);
+
   // --- Selection State ---
   readonly selectedSystemId = signal<string | null>(null);
   readonly selectedSubsystemId = signal<string | null>(null);
@@ -17,11 +20,23 @@ export class DataService {
 
   constructor() {
     this.loadFromStorage();
+    this.initTheme();
 
-    // Auto-save effect
+    // Auto-save data
     effect(() => {
       localStorage.setItem('nebula_systems', JSON.stringify(this.systems()));
       localStorage.setItem('nebula_requirements', JSON.stringify(this.requirements()));
+    });
+
+    // Auto-save theme & Apply to DOM
+    effect(() => {
+      const isDark = this.darkMode();
+      localStorage.setItem('nebula_dark_mode', String(isDark));
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     });
   }
 
@@ -39,6 +54,19 @@ export class DataService {
     if (savedReqs) {
       this.requirements.set(JSON.parse(savedReqs));
     }
+  }
+
+  private initTheme() {
+    const saved = localStorage.getItem('nebula_dark_mode');
+    if (saved !== null) {
+        this.darkMode.set(saved === 'true');
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        this.darkMode.set(true);
+    }
+  }
+
+  toggleTheme() {
+    this.darkMode.update(d => !d);
   }
 
   private seedData() {
@@ -139,5 +167,60 @@ export class DataService {
 
   deleteRequirement(id: string) {
     this.requirements.update(reqs => reqs.filter(r => r.id !== id));
+  }
+
+  deleteSystem(id: string) {
+    this.systems.update(s => s.filter(sys => sys.id !== id));
+    // Cascade delete requirements
+    this.requirements.update(reqs => reqs.filter(r => r.systemId !== id));
+    
+    if (this.selectedSystemId() === id) {
+      this.selectedSystemId.set(null);
+      this.selectedSubsystemId.set(null);
+      this.selectedFeatureId.set(null);
+    }
+  }
+
+  deleteSubsystem(systemId: string, subId: string) {
+    this.systems.update(systems => systems.map(sys => {
+      if (sys.id === systemId) {
+        return {
+          ...sys,
+          subsystems: sys.subsystems.filter(sub => sub.id !== subId)
+        };
+      }
+      return sys;
+    }));
+    // Cascade delete requirements
+    this.requirements.update(reqs => reqs.filter(r => r.subsystemId !== subId));
+
+    if (this.selectedSubsystemId() === subId) {
+      this.selectedSubsystemId.set(null);
+      this.selectedFeatureId.set(null);
+    }
+  }
+
+  deleteFeature(systemId: string, subId: string, featId: string) {
+    this.systems.update(systems => systems.map(sys => {
+      if (sys.id === systemId) {
+        const updatedSubsystems = sys.subsystems.map(sub => {
+          if (sub.id === subId) {
+            return {
+              ...sub,
+              features: sub.features.filter(f => f.id !== featId)
+            };
+          }
+          return sub;
+        });
+        return { ...sys, subsystems: updatedSubsystems };
+      }
+      return sys;
+    }));
+    // Cascade delete requirements
+    this.requirements.update(reqs => reqs.filter(r => r.featureId !== featId));
+
+    if (this.selectedFeatureId() === featId) {
+      this.selectedFeatureId.set(null);
+    }
   }
 }
