@@ -1,5 +1,5 @@
 {
   "name": "Nebula RMS",
-  "description": "A high-performance Requirements Management System with Kanban visualization, hierarchical project structuring, and AI-assisted requirement generation.",
+  "description": "A high-performance Requirements Management System with Kanban visualization and hierarchical project structuring.",
   "requestFramePermissions": []
 }
