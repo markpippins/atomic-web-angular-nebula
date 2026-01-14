@@ -21,7 +21,13 @@
           },
           "configurations": {
             "production": {
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,
@@ -34,7 +40,7 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 3000
+            "port":3068
           },
           "configurations": {
             "production": {
@@ -48,5 +54,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "f1416d19-8c32-405d-8346-7a03433f047a"
   }
 }
