@@ -1,6 +1,7 @@
 
 import { Injectable, signal } from '@angular/core';
 import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -10,22 +11,13 @@ export class AiService {
   readonly isConfigured = signal(false);
 
   constructor() {
-    let apiKey = '';
-    try {
-      // Safely check for process.env
-      // @ts-ignore
-      if (typeof process !== 'undefined' && process.env) {
-        // @ts-ignore
-        apiKey = process.env['API_KEY'] || '';
-      }
-    } catch (e) {
-      console.warn('Environment variable access failed', e);
-    }
+    // Access configuration via the standard Angular environment object
+    const apiKey = environment.API_KEY;
 
     if (apiKey) {
       this.configure(apiKey);
     } else {
-        console.log('Nebula RMS: No API_KEY found. Waiting for manual configuration.');
+        console.log('Nebula RMS: No API_KEY found in environment. Waiting for manual configuration.');
     }
   }
 
