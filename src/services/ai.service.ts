@@ -1,9 +1,67 @@
 
 import { Injectable } from '@angular/core';
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 
 @Injectable({
   providedIn: 'root'
 })
 export class AiService {
-  constructor() {}
+  private ai: GoogleGenAI;
+
+  constructor() {
+    this.ai = new GoogleGenAI({ apiKey: process.env['API_KEY'] });
+  }
+
+  async generateRequirements(context: string, documentation: string, userStory: string): Promise<any[]> {
+    const prompt = `
+      You are a specialized Business Analyst and Technical Architect AI.
+      
+      CONTEXT (Hierarchy):
+      ${context}
+
+      SYSTEM DOCUMENTATION & TECHNICAL CONSTRAINTS:
+      ${documentation}
+
+      USER STORY / GOAL:
+      "${userStory}"
+
+      TASK:
+      Decompose the User Story above into 3-5 granular technical requirements/tasks for a Kanban board.
+      Ensure the requirements align with the provided System Documentation and Technical Constraints.
+      
+      OUTPUT FORMAT:
+      Return a JSON array of objects.
+    `;
+
+    const schema: Schema = {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING, description: "Concise task title" },
+          description: { type: Type.STRING, description: "Detailed acceptance criteria, technical implementation details based on documentation." },
+          priority: { type: Type.STRING, enum: ['Low', 'Medium', 'High'] }
+        },
+        required: ['title', 'description', 'priority']
+      }
+    };
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: schema,
+          temperature: 0.7
+        }
+      });
+      
+      const text = response.text;
+      return JSON.parse(text || '[]');
+    } catch (e) {
+      console.error('AI Generation Error', e);
+      return [];
+    }
+  }
 }

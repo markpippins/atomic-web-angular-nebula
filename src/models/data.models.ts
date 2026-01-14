@@ -5,6 +5,7 @@ export interface System {
   id: string;
   name: string;
   description: string;
+  readme?: string; // Context/Documentation
   subsystems: Subsystem[];
 }
 
@@ -12,6 +13,7 @@ export interface Subsystem {
   id: string;
   name: string;
   description: string;
+  readme?: string; // Context/Documentation
   features: Feature[];
   systemId: string; // Parent reference
 }
@@ -20,6 +22,7 @@ export interface Feature {
   id: string;
   name: string;
   description: string;
+  readme?: string; // Context/Documentation
   subsystemId: string; // Parent reference
 }
 

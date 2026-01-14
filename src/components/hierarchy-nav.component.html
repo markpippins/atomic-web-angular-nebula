@@ -37,7 +37,7 @@
 
   <!-- Tree View -->
   <div class="flex-1 overflow-y-auto p-2">
-    @for (system of dataService.systems(); track system.id) {
+    @for (system of dataService.sortedSystems(); track system.id) {
       <div class="mb-2">
         <!-- System Node -->
         <div 
@@ -95,7 +95,7 @@
                 [class.bg-blue-50]="dataService.selectedSubsystemId() === sub.id"
                 [class.dark:bg-blue-900]="dataService.selectedSubsystemId() === sub.id"
                 [class.dark:bg-opacity-30]="dataService.selectedSubsystemId() === sub.id"
-                (click)="selectSubsystem(sub.id)"
+                (click)="selectSubsystem(system.id, sub.id)"
                >
                 <span class="text-gray-400 dark:text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -142,7 +142,7 @@
                         [class.dark:bg-opacity-50]="dataService.selectedFeatureId() === feat.id"
                         [class.text-blue-700]="dataService.selectedFeatureId() === feat.id"
                         [class.dark:text-blue-300]="dataService.selectedFeatureId() === feat.id"
-                        (click)="selectFeature(feat.id)"
+                        (click)="selectFeature(system.id, sub.id, feat.id)"
                      >
                         <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
                         <span class="flex-1 truncate">{{ feat.name }}</span>

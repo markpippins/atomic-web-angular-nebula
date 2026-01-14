@@ -1,7 +1,8 @@
 
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../services/data.service';
+import { AiService } from '../services/ai.service';
 import { Requirement, Status } from '../models/data.models';
 import { FormsModule } from '@angular/forms';
 import { BoardViewComponent } from './board-view.component';
@@ -15,15 +16,24 @@ import { TableViewComponent } from './table-view.component';
 })
 export class KanbanBoardComponent {
   dataService = inject(DataService);
+  aiService = inject(AiService);
   
-  viewMode = signal<'board' | 'table'>('board');
+  viewMode = signal<'board' | 'table' | 'docs'>('board');
   searchTerm = signal('');
   showModal = signal(false);
+  showAiModal = signal(false);
+  isGenerating = signal(false);
 
   // Form State
   newReqTitle = '';
   newReqDesc = '';
   newReqPriority: 'Low' | 'Medium' | 'High' = 'Medium';
+  
+  // AI Form State
+  userStoryPrompt = '';
+
+  // Docs Editing State
+  editableReadme = signal('');
 
   // Computed Context
   selectedSystem = computed(() => 
@@ -39,6 +49,36 @@ export class KanbanBoardComponent {
     const sub = this.selectedSubsystem();
     return sub?.features.find(f => f.id === this.dataService.selectedFeatureId());
   });
+
+  // Current Documentation based on selection level
+  currentReadme = computed(() => {
+    if (this.selectedFeature()) return this.selectedFeature()!.readme || '';
+    if (this.selectedSubsystem()) return this.selectedSubsystem()!.readme || '';
+    if (this.selectedSystem()) return this.selectedSystem()!.readme || '';
+    return '';
+  });
+
+  // Effect to update editor when selection changes
+  constructor() {
+    effect(() => {
+        this.editableReadme.set(this.currentReadme());
+    });
+  }
+
+  saveReadme() {
+    const content = this.editableReadme();
+    const feat = this.selectedFeature();
+    const sub = this.selectedSubsystem();
+    const sys = this.selectedSystem();
+
+    if (feat && sub && sys) {
+        this.dataService.updateFeatureReadme(sys.id, sub.id, feat.id, content);
+    } else if (sub && sys) {
+        this.dataService.updateSubsystemReadme(sys.id, sub.id, content);
+    } else if (sys) {
+        this.dataService.updateSystemReadme(sys.id, content);
+    }
+  }
 
   filteredRequirements = computed(() => {
     let reqs = this.dataService.requirements();
@@ -69,6 +109,49 @@ export class KanbanBoardComponent {
     this.newReqTitle = '';
     this.newReqDesc = '';
     this.showModal.set(true);
+  }
+
+  openAiModal() {
+    this.userStoryPrompt = '';
+    this.showAiModal.set(true);
+  }
+
+  async generateAiRequirements() {
+    const feat = this.selectedFeature();
+    const sub = this.selectedSubsystem();
+    const sys = this.selectedSystem();
+    
+    if (!feat || !sub || !sys || !this.userStoryPrompt.trim()) return;
+
+    this.isGenerating.set(true);
+    const context = `System: ${sys.name}, Subsystem: ${sub.name}, Feature: ${feat.name}`;
+
+    // Stack the documentation: System -> Subsystem -> Feature
+    let docStack = '';
+    if (sys.readme) docStack += `[SYSTEM DOCS]:\n${sys.readme}\n\n`;
+    if (sub.readme) docStack += `[SUBSYSTEM DOCS]:\n${sub.readme}\n\n`;
+    if (feat.readme) docStack += `[FEATURE DOCS]:\n${feat.readme}\n\n`;
+
+    try {
+      const generated = await this.aiService.generateRequirements(context, docStack, this.userStoryPrompt);
+      
+      // Batch add
+      generated.forEach(req => {
+        this.dataService.addRequirement({
+          title: req.title,
+          description: req.description,
+          priority: req.priority,
+          status: 'Backlog',
+          systemId: sys.id,
+          subsystemId: sub.id,
+          featureId: feat.id
+        });
+      });
+      
+      this.showAiModal.set(false);
+    } finally {
+      this.isGenerating.set(false);
+    }
   }
 
   createManual() {

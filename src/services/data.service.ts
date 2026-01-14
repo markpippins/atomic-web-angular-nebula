@@ -10,6 +10,19 @@ export class DataService {
   readonly systems = signal<System[]>([]);
   readonly requirements = signal<Requirement[]>([]);
   
+  // --- Computed State for UI ---
+  readonly sortedSystems = computed(() => {
+    const sortByName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+    
+    return this.systems().map(sys => ({
+      ...sys,
+      subsystems: sys.subsystems.map(sub => ({
+        ...sub,
+        features: [...sub.features].sort(sortByName)
+      })).sort(sortByName)
+    })).sort(sortByName);
+  });
+
   // --- UI State ---
   readonly darkMode = signal<boolean>(false);
 
@@ -78,15 +91,18 @@ export class DataService {
       id: sysId,
       name: 'E-Commerce Platform',
       description: 'Main customer facing retail platform',
+      readme: '# E-Commerce Platform Architecture\nThis system handles all customer-facing interactions.\n\n## Tech Stack\n- Angular 18\n- Node.js API\n- PostgreSQL',
       subsystems: [{
         id: subId,
         name: 'Checkout',
         description: 'Payment and Order processing',
+        readme: '## Checkout Flow\n1. Cart validation\n2. User auth check\n3. Shipping address\n4. Payment processing',
         systemId: sysId,
         features: [{
           id: featId,
           name: 'Payment Gateway',
           description: 'Stripe and PayPal integration',
+          readme: 'Integration requirements for Stripe v3 API.',
           subsystemId: subId
         }]
       }]
@@ -145,6 +161,42 @@ export class DataService {
           return sub;
         });
         return { ...sys, subsystems: updatedSubsystems };
+      }
+      return sys;
+    }));
+  }
+
+  // --- Documentation Updates ---
+
+  updateSystemReadme(id: string, readme: string) {
+    this.systems.update(s => s.map(sys => sys.id === id ? { ...sys, readme } : sys));
+  }
+
+  updateSubsystemReadme(sysId: string, subId: string, readme: string) {
+    this.systems.update(s => s.map(sys => {
+      if (sys.id === sysId) {
+        return {
+          ...sys,
+          subsystems: sys.subsystems.map(sub => sub.id === subId ? { ...sub, readme } : sub)
+        };
+      }
+      return sys;
+    }));
+  }
+
+  updateFeatureReadme(sysId: string, subId: string, featId: string, readme: string) {
+    this.systems.update(s => s.map(sys => {
+      if (sys.id === sysId) {
+        const subs = sys.subsystems.map(sub => {
+          if (sub.id === subId) {
+            return {
+              ...sub,
+              features: sub.features.map(f => f.id === featId ? { ...f, readme } : f)
+            };
+          }
+          return sub;
+        });
+        return { ...sys, subsystems: subs };
       }
       return sys;
     }));

@@ -27,13 +27,16 @@ export class HierarchyNavComponent {
     this.dataService.selectedFeatureId.set(null);
   }
 
-  selectSubsystem(id: string) {
-    this.dataService.selectedSubsystemId.set(id);
+  selectSubsystem(systemId: string, subId: string) {
+    this.dataService.selectedSystemId.set(systemId);
+    this.dataService.selectedSubsystemId.set(subId);
     this.dataService.selectedFeatureId.set(null);
   }
 
-  selectFeature(id: string) {
-    this.dataService.selectedFeatureId.set(id);
+  selectFeature(systemId: string, subId: string, featureId: string) {
+    this.dataService.selectedSystemId.set(systemId);
+    this.dataService.selectedSubsystemId.set(subId);
+    this.dataService.selectedFeatureId.set(featureId);
   }
 
   createSystem() {

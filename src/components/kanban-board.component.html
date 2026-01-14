@@ -16,14 +16,18 @@
          }
        </h1>
        <p class="text-xs text-gray-500 dark:text-gray-400">
-         {{ filteredRequirements().length }} items found
+         @if(viewMode() === 'docs') {
+             Context Documentation
+         } @else {
+             {{ filteredRequirements().length }} items found
+         }
        </p>
     </div>
 
     <!-- Center: Search and View Switcher -->
     <div class="flex-1 flex items-center justify-center gap-4">
-        <!-- Search -->
-        <div class="relative w-64">
+        <!-- Search (Hidden in Docs mode) -->
+        <div class="relative w-64" [class.invisible]="viewMode() === 'docs'">
            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
              <svg class="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
            </div>
@@ -54,11 +58,31 @@
              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
              Table
            </button>
+            <button 
+             (click)="viewMode.set('docs')"
+             [class]="viewMode() === 'docs' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+             class="px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+           >
+             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+             Docs
+           </button>
         </div>
     </div>
 
-    <!-- Add Button -->
-    <div class="min-w-[150px] flex justify-end">
+    <!-- Add Buttons -->
+    <div class="min-w-[150px] flex justify-end gap-2">
+        <button 
+          [disabled]="!canAddRequirement()"
+          (click)="openAiModal()"
+          class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
+          title="Generate with AI"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
+          </svg>
+          <span class="hidden xl:inline">AI Gen</span>
+        </button>
+        
         <button 
           [disabled]="!canAddRequirement()"
           (click)="openAddModal()"
@@ -75,8 +99,40 @@
   <!-- View Area -->
   @if (viewMode() === 'board') {
      <app-board-view [requirements]="filteredRequirements()"></app-board-view>
-  } @else {
+  } @else if (viewMode() === 'table') {
      <app-table-view [requirements]="filteredRequirements()"></app-table-view>
+  } @else {
+     <!-- Documentation View -->
+     <div class="flex-1 p-6 h-full overflow-hidden flex flex-col">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1 flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span class="font-semibold text-gray-700 dark:text-gray-200">
+                        @if(selectedFeature()) { Feature Documentation }
+                        @else if(selectedSubsystem()) { Subsystem Documentation }
+                        @else if(selectedSystem()) { System Documentation }
+                        @else { Select an item to view documentation }
+                    </span>
+                </div>
+                <button (click)="saveReadme()" class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors">Save Changes</button>
+            </div>
+            
+            @if (selectedSystem()) {
+                <textarea 
+                    class="flex-1 w-full p-6 resize-none focus:outline-none dark:bg-gray-800 dark:text-gray-200 font-mono text-sm leading-relaxed" 
+                    [(ngModel)]="editableReadme"
+                    placeholder="# Add documentation here...
+                    
+This content will be used as context for the AI when generating requirements."
+                ></textarea>
+            } @else {
+                <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                    <p>Select a System, Subsystem, or Feature to edit its documentation.</p>
+                </div>
+            }
+        </div>
+     </div>
   }
 </div>
 
@@ -116,6 +172,57 @@
       <div class="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
          <button (click)="showModal.set(false)" class="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
          <button (click)="createManual()" [disabled]="!newReqTitle" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600">Create Requirement</button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- AI Modal -->
+@if (showAiModal()) {
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transition-colors">
+      
+      <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-purple-50 dark:bg-purple-900/20">
+         <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+               <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
+            </svg>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">AI Requirement Generator</h2>
+         </div>
+         <button (click)="showAiModal.set(false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+         </button>
+      </div>
+
+      <div class="p-6">
+         @if (isGenerating()) {
+           <div class="flex flex-col items-center justify-center py-8">
+             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 dark:border-purple-400"></div>
+             <p class="mt-4 text-gray-600 dark:text-gray-300 font-medium">Reading documentation & Decomposing story...</p>
+           </div>
+         } @else {
+           <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+             Describe a user story. The AI will use your <strong>System/Subsystem/Feature documentation</strong> as context to generate technical tasks.
+           </p>
+           <textarea 
+             rows="4" 
+             [(ngModel)]="userStoryPrompt" 
+             class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 p-3 border resize-none" 
+             placeholder="Enter your user story here..."
+           ></textarea>
+         }
+      </div>
+      
+      <div class="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
+         <button [disabled]="isGenerating()" (click)="showAiModal.set(false)" class="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+         <button 
+           (click)="generateAiRequirements()" 
+           [disabled]="!userStoryPrompt || isGenerating()" 
+           class="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 flex items-center gap-2"
+         >
+           Generate Requirements
+         </button>
       </div>
 
     </div>
