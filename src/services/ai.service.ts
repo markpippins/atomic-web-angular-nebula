@@ -1,5 +1,5 @@
 
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 
 @Injectable({
@@ -7,7 +7,7 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
 })
 export class AiService {
   private ai: GoogleGenAI | null = null;
-  public isConfigured = false;
+  readonly isConfigured = signal(false);
 
   constructor() {
     let apiKey = '';
@@ -23,21 +23,27 @@ export class AiService {
     }
 
     if (apiKey) {
-      try {
-        this.ai = new GoogleGenAI({ apiKey });
-        this.isConfigured = true;
-      } catch (e) {
-        console.error('Failed to initialize GoogleGenAI', e);
-        this.isConfigured = false;
-      }
+      this.configure(apiKey);
     } else {
-      console.log('Nebula RMS: No API_KEY found. AI features will be disabled.');
-      this.isConfigured = false;
+        console.log('Nebula RMS: No API_KEY found. Waiting for manual configuration.');
+    }
+  }
+
+  configure(apiKey: string): boolean {
+    if (!apiKey.trim()) return false;
+    try {
+      this.ai = new GoogleGenAI({ apiKey });
+      this.isConfigured.set(true);
+      return true;
+    } catch (e) {
+      console.error('Failed to initialize GoogleGenAI', e);
+      this.isConfigured.set(false);
+      return false;
     }
   }
 
   async generateRequirements(context: string, documentation: string, userStory: string): Promise<any[]> {
-    if (!this.ai || !this.isConfigured) {
+    if (!this.ai || !this.isConfigured()) {
       console.warn('AI Service is not configured. Cannot generate requirements.');
       return [];
     }

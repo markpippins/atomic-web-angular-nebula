@@ -22,6 +22,7 @@ export class KanbanBoardComponent {
   searchTerm = signal('');
   showModal = signal(false);
   showAiModal = signal(false);
+  showApiKeyModal = signal(false); // New modal signal
   isGenerating = signal(false);
 
   // Form State
@@ -31,6 +32,7 @@ export class KanbanBoardComponent {
   
   // AI Form State
   userStoryPrompt = '';
+  apiKeyInput = ''; // API Key input
 
   // Docs Editing State
   editableReadme = signal('');
@@ -59,7 +61,7 @@ export class KanbanBoardComponent {
   });
 
   // Check if AI is available
-  aiEnabled = computed(() => this.aiService.isConfigured);
+  aiEnabled = computed(() => this.aiService.isConfigured());
 
   // Effect to update editor when selection changes
   constructor() {
@@ -115,9 +117,27 @@ export class KanbanBoardComponent {
   }
 
   openAiModal() {
-    if (!this.aiEnabled()) return;
+    if (!this.aiEnabled()) {
+        // If not enabled, open config modal
+        this.apiKeyInput = '';
+        this.showApiKeyModal.set(true);
+        return;
+    }
     this.userStoryPrompt = '';
     this.showAiModal.set(true);
+  }
+
+  configureApiKey() {
+    if (this.apiKeyInput.trim()) {
+        const success = this.aiService.configure(this.apiKeyInput.trim());
+        if (success) {
+            this.showApiKeyModal.set(false);
+            // Re-open AI modal now that it is configured
+            setTimeout(() => this.openAiModal(), 100); 
+        } else {
+            alert('Failed to configure AI service.');
+        }
+    }
   }
 
   async generateAiRequirements() {
