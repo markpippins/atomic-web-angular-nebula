@@ -6,12 +6,13 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
   providedIn: 'root'
 })
 export class AiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
+  public isConfigured = false;
 
   constructor() {
     let apiKey = '';
     try {
-      // Safely check if process is defined before accessing env
+      // Safely check for process.env
       // @ts-ignore
       if (typeof process !== 'undefined' && process.env) {
         // @ts-ignore
@@ -21,10 +22,26 @@ export class AiService {
       console.warn('Environment variable access failed', e);
     }
 
-    this.ai = new GoogleGenAI({ apiKey });
+    if (apiKey) {
+      try {
+        this.ai = new GoogleGenAI({ apiKey });
+        this.isConfigured = true;
+      } catch (e) {
+        console.error('Failed to initialize GoogleGenAI', e);
+        this.isConfigured = false;
+      }
+    } else {
+      console.log('Nebula RMS: No API_KEY found. AI features will be disabled.');
+      this.isConfigured = false;
+    }
   }
 
   async generateRequirements(context: string, documentation: string, userStory: string): Promise<any[]> {
+    if (!this.ai || !this.isConfigured) {
+      console.warn('AI Service is not configured. Cannot generate requirements.');
+      return [];
+    }
+
     const prompt = `
       You are a specialized Business Analyst and Technical Architect AI.
       

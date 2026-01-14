@@ -58,6 +58,9 @@ export class KanbanBoardComponent {
     return '';
   });
 
+  // Check if AI is available
+  aiEnabled = computed(() => this.aiService.isConfigured);
+
   // Effect to update editor when selection changes
   constructor() {
     effect(() => {
@@ -112,6 +115,7 @@ export class KanbanBoardComponent {
   }
 
   openAiModal() {
+    if (!this.aiEnabled()) return;
     this.userStoryPrompt = '';
     this.showAiModal.set(true);
   }
