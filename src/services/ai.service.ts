@@ -9,7 +9,19 @@ export class AiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env['API_KEY'] });
+    let apiKey = '';
+    try {
+      // Safely check if process is defined before accessing env
+      // @ts-ignore
+      if (typeof process !== 'undefined' && process.env) {
+        // @ts-ignore
+        apiKey = process.env['API_KEY'] || '';
+      }
+    } catch (e) {
+      console.warn('Environment variable access failed', e);
+    }
+
+    this.ai = new GoogleGenAI({ apiKey });
   }
 
   async generateRequirements(context: string, documentation: string, userStory: string): Promise<any[]> {
