@@ -83,6 +83,23 @@ export class HierarchyNavComponent {
     }
   }
 
+  // --- Import / Export ---
+  triggerExport() {
+    this.dataService.exportDatabase();
+  }
+
+  triggerImport(input: HTMLInputElement) {
+    input.value = '';
+    input.click();
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files?.length) {
+      this.dataService.importDatabase(input.files[0]);
+    }
+  }
+
   deleteSystem(id: string, event: Event) {
     event.stopPropagation();
     if (confirm('Delete this system? All subsystems and requirements inside it will be lost.')) {

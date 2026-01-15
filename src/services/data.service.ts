@@ -165,6 +165,50 @@ export class DataService {
     this.selectedSystemId.set(sysId);
   }
 
+  // --- Import / Export ---
+  exportDatabase() {
+    const data = {
+      systems: this.systems(),
+      requirements: this.requirements(),
+      workSessions: this.workSessions(),
+      meta: {
+        exportedAt: new Date().toISOString(),
+        version: '1.0'
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nebula-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  importDatabase(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        if (json.systems && Array.isArray(json.systems)) {
+          this.systems.set(json.systems);
+        }
+        if (json.requirements && Array.isArray(json.requirements)) {
+          this.requirements.set(json.requirements);
+        }
+        if (json.workSessions && Array.isArray(json.workSessions)) {
+          this.workSessions.set(json.workSessions);
+        }
+        alert('Database restored successfully!');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to parse backup file.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // --- Actions ---
 
   addSystem(name: string, description: string) {
