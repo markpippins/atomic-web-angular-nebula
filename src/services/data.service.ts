@@ -391,6 +391,183 @@ export class DataService {
     }
   }
 
+  // --- Rearrange / Move Logic ---
+
+  moveFeature(featureId: string, targetSystemId: string, targetSubsystemId: string) {
+    // 1. Find the feature and remove from old location
+    let feature: Feature | undefined;
+    this.systems.update(systems => systems.map(sys => ({
+      ...sys,
+      subsystems: sys.subsystems.map(sub => {
+        const found = sub.features.find(f => f.id === featureId);
+        if (found) {
+            feature = found;
+            return { ...sub, features: sub.features.filter(f => f.id !== featureId) };
+        }
+        return sub;
+      })
+    })));
+
+    if (!feature) return;
+
+    // 2. Add to new location
+    feature.subsystemId = targetSubsystemId;
+    this.systems.update(systems => systems.map(sys => {
+        if (sys.id === targetSystemId) {
+            return {
+                ...sys,
+                subsystems: sys.subsystems.map(sub => {
+                    if (sub.id === targetSubsystemId) {
+                        return { ...sub, features: [...sub.features, feature!] };
+                    }
+                    return sub;
+                })
+            }
+        }
+        return sys;
+    }));
+
+    // 3. Update Requirements
+    this.requirements.update(reqs => reqs.map(r => {
+        if (r.featureId === featureId) {
+            return { ...r, systemId: targetSystemId, subsystemId: targetSubsystemId };
+        }
+        return r;
+    }));
+  }
+
+  moveSubsystem(subsystemId: string, targetSystemId: string) {
+     let subsystem: Subsystem | undefined;
+     
+     // 1. Find and remove from old system
+     this.systems.update(systems => systems.map(sys => {
+         const found = sys.subsystems.find(s => s.id === subsystemId);
+         if (found) {
+             subsystem = found;
+             return { ...sys, subsystems: sys.subsystems.filter(s => s.id !== subsystemId) };
+         }
+         return sys;
+     }));
+
+     if (!subsystem) return;
+
+     // 2. Add to new system
+     subsystem.systemId = targetSystemId;
+     this.systems.update(systems => systems.map(sys => {
+         if (sys.id === targetSystemId) {
+             return { ...sys, subsystems: [...sys.subsystems, subsystem!] };
+         }
+         return sys;
+     }));
+
+     // 3. Update Requirements
+     this.requirements.update(reqs => reqs.map(r => {
+         if (r.subsystemId === subsystemId) {
+             return { ...r, systemId: targetSystemId };
+         }
+         return r;
+     }));
+  }
+
+  // Demote a System to become a Subsystem of another System
+  demoteSystem(sourceSystemId: string, targetSystemId: string) {
+      const allSystems = this.systems();
+      const sourceSystem = allSystems.find(s => s.id === sourceSystemId);
+      const targetSystem = allSystems.find(s => s.id === targetSystemId);
+
+      if (!sourceSystem || !targetSystem) return;
+
+      // 1. Create a new Subsystem in Target based on Source System
+      const newSubsystemId = crypto.randomUUID();
+      const newSubsystem: Subsystem = {
+          id: newSubsystemId,
+          name: sourceSystem.name,
+          description: sourceSystem.description,
+          readme: sourceSystem.readme,
+          color: this.getUniqueColor(targetSystemId),
+          systemId: targetSystemId,
+          features: []
+      };
+
+      // 2. Convert Source Subsystems into Features for the new Subsystem
+      sourceSystem.subsystems.forEach(oldSub => {
+          const newFeature: Feature = {
+              id: crypto.randomUUID(), // New ID to be safe, or keep old? Keeping old might break references if types mix. Let's keep ID to save req references where possible, but Feature schema != Subsystem schema.
+              // Actually, simpler to keep ID if we are careful, BUT 'Subsystem' has features, 'Feature' doesn't.
+              // We must Flatten.
+              name: oldSub.name,
+              description: oldSub.description,
+              readme: oldSub.readme,
+              subsystemId: newSubsystemId
+          };
+          
+          // Add this "Converted Feature" to the new Subsystem
+          newSubsystem.features.push(newFeature);
+
+          // Update Requirements linked to the OLD Subsystem to point to the NEW Feature
+          // And also update their System ID.
+          // OLD: systemId=source, subsystemId=oldSub.id, featureId=null
+          // NEW: systemId=target, subsystemId=newSubsystemId, featureId=newFeature.id
+          this.requirements.update(reqs => reqs.map(r => {
+              if (r.subsystemId === oldSub.id) {
+                  return { 
+                      ...r, 
+                      systemId: targetSystemId, 
+                      subsystemId: newSubsystemId, 
+                      featureId: newFeature.id // Link reqs that were at subsystem level to this new feature
+                  };
+              }
+              return r;
+          }));
+
+          // What about reqs that were inside Features of the old Subsystem?
+          // They need to be moved to the new Feature as well (Flattened) because Features can't have Features.
+          // OLD: featureId IN oldSub.features
+          const oldFeatureIds = oldSub.features.map(f => f.id);
+          this.requirements.update(reqs => reqs.map(r => {
+              if (oldFeatureIds.includes(r.featureId)) {
+                   return {
+                       ...r,
+                       systemId: targetSystemId,
+                       subsystemId: newSubsystemId,
+                       featureId: newFeature.id // Flattened into the converted feature
+                   };
+              }
+              return r;
+          }));
+      });
+
+      // 3. Handle Direct Requirements of the Source System (no subsystem)
+      // They move to the new Subsystem (no feature)
+      this.requirements.update(reqs => reqs.map(r => {
+          if (r.systemId === sourceSystemId && !r.subsystemId) {
+              return {
+                  ...r,
+                  systemId: targetSystemId,
+                  subsystemId: newSubsystemId
+              };
+          }
+          return r;
+      }));
+
+      // 4. Add the new Subsystem to the Target System state
+      this.systems.update(systems => systems.map(sys => {
+          if (sys.id === targetSystemId) {
+              return { ...sys, subsystems: [...sys.subsystems, newSubsystem] };
+          }
+          return sys;
+      }));
+
+      // 5. Delete the old Source System
+      // (This automatically filters out the old system from the array)
+      this.systems.update(sys => sys.filter(s => s.id !== sourceSystemId));
+
+      // 6. Reset Selection
+      this.selectedSystemId.set(targetSystemId);
+      this.selectedSubsystemId.set(newSubsystemId);
+      this.selectedFeatureId.set(null);
+  }
+
   // --- Work Sessions ---
   addWorkSession(session: Omit<WorkSession, 'id' | 'createdAt' | 'updatedAt'>) {
     const newSession: WorkSession = {

@@ -56,6 +56,13 @@
           <span class="font-semibold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{{ system.name }}</span>
           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 
+              (click)="initiateMove('System', system, $event)"
+              class="text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 p-1"
+              title="Move/Demote System"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" /></svg>
+            </button>
+            <button 
               (click)="addingSubsystemTo.set(system.id); $event.stopPropagation()"
               class="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1"
               title="Add Subsystem"
@@ -112,6 +119,13 @@
 
                 <span class="text-sm text-gray-600 dark:text-gray-300 truncate flex-1">{{ sub.name }}</span>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      (click)="initiateMove('Subsystem', sub, $event)"
+                      class="text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 p-0.5"
+                      title="Move Subsystem"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 7a1 1 0 011-1h10a1 1 0 011 1v3a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM2 7a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 01-1 1H3a1 1 0 01-1-1V7z" clip-rule="evenodd" /></svg>
+                    </button>
                    <button 
                       (click)="addingFeatureTo.set(sub.id); $event.stopPropagation()"
                       class="text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 p-0.5"
@@ -154,13 +168,22 @@
                      >
                         <span class="w-1.5 h-1.5 rounded-full" [style.background-color]="sub.color || '#10B981'"></span>
                         <span class="flex-1 truncate">{{ feat.name }}</span>
-                        <button 
-                          (click)="deleteFeature(system.id, sub.id, feat.id, $event)"
-                          class="opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400"
-                          title="Delete Feature"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                        </button>
+                         <div class="opacity-0 group-hover:opacity-100 flex gap-0.5">
+                            <button 
+                              (click)="initiateMove('Feature', feat, $event)"
+                              class="text-gray-300 dark:text-gray-600 hover:text-purple-500 dark:hover:text-purple-400"
+                              title="Move Feature"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" /><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" /></svg>
+                            </button>
+                            <button 
+                              (click)="deleteFeature(system.id, sub.id, feat.id, $event)"
+                              class="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400"
+                              title="Delete Feature"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
                      </div>
                   }
                </div>
@@ -171,3 +194,87 @@
     }
   </div>
 </div>
+
+<!-- Move/Reparent Modal -->
+@if (showMoveModal()) {
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transition-colors">
+      
+      <div class="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+         <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
+             Move {{ moveTargetType() }}
+         </h3>
+         <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Moving: {{ movingItemName() }}</p>
+      </div>
+
+      <div class="p-4 space-y-4">
+          @if (moveTargetType() === 'Feature') {
+              <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Select System</label>
+                  <select 
+                      [(ngModel)]="targetSystemIdForFeature" 
+                      class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border text-sm"
+                  >
+                      @for(sys of dataService.systems(); track sys.id) {
+                          <option [value]="sys.id">{{ sys.name }}</option>
+                      }
+                  </select>
+              </div>
+              
+              <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Select Target Subsystem</label>
+                  <select 
+                      [(ngModel)]="selectedMoveTargetId" 
+                      [disabled]="!availableSubsystemsForFeature().length"
+                      class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border text-sm"
+                  >
+                      @for(sub of availableSubsystemsForFeature(); track sub.id) {
+                          <option [value]="sub.id">{{ sub.name }}</option>
+                      }
+                  </select>
+                  @if (!availableSubsystemsForFeature().length) {
+                      <p class="text-[10px] text-red-500 mt-1">No subsystems available in this system.</p>
+                  }
+              </div>
+
+          } @else {
+              <!-- Moving System or Subsystem -->
+               <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      @if(moveTargetType() === 'System') { Select Target System (Parent) } 
+                      @else { Select New Parent System }
+                  </label>
+                  <select 
+                      [(ngModel)]="selectedMoveTargetId" 
+                      class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border text-sm"
+                  >
+                      @for(sys of availableSystems(); track sys.id) {
+                          <option [value]="sys.id">{{ sys.name }}</option>
+                      }
+                  </select>
+                  @if (moveTargetType() === 'System') {
+                      <div class="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/30 rounded">
+                          <p class="text-[10px] text-yellow-800 dark:text-yellow-200 leading-tight">
+                              <strong>Warning:</strong> Converting a System to a Subsystem will restructure it. 
+                              Current subsystems will become Features. Deeply nested features will be flattened into requirements.
+                          </p>
+                      </div>
+                  }
+               </div>
+          }
+      </div>
+
+      <div class="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-2">
+         <button (click)="showMoveModal.set(false)" class="px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+         <button 
+           (click)="executeMove()" 
+           [disabled]="!selectedMoveTargetId()"
+           class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600"
+         >
+           Move
+         </button>
+      </div>
+
+    </div>
+  </div>
+}
