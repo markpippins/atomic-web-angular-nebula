@@ -107,7 +107,10 @@
   @if (viewMode() === 'board') {
      <app-board-view [requirements]="filteredRequirements()"></app-board-view>
   } @else if (viewMode() === 'table') {
-     <app-table-view [requirements]="filteredRequirements()"></app-table-view>
+     <app-table-view 
+       [requirements]="filteredRequirements()" 
+       (editReq)="openEditModal($event)"
+     ></app-table-view>
   } @else {
      <!-- Documentation View -->
      <div class="flex-1 p-6 h-full overflow-hidden flex flex-col">
@@ -143,13 +146,15 @@ This content will be used as context for the AI when generating requirements."
   }
 </div>
 
-<!-- Create Modal -->
+<!-- Create/Edit Modal -->
 @if (showModal()) {
   <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
       
       <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
-         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Create Requirement</h2>
+         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">
+             @if (editingReqId()) { Edit Requirement } @else { Create Requirement }
+         </h2>
          <button (click)="showModal.set(false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
          </button>
@@ -178,7 +183,9 @@ This content will be used as context for the AI when generating requirements."
       
       <div class="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
          <button (click)="showModal.set(false)" class="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
-         <button (click)="createManual()" [disabled]="!newReqTitle" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600">Create Requirement</button>
+         <button (click)="saveManual()" [disabled]="!newReqTitle" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600">
+            @if (editingReqId()) { Save Changes } @else { Create Requirement }
+         </button>
       </div>
 
     </div>

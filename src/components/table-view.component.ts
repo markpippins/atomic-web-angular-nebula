@@ -1,5 +1,5 @@
 
-import { Component, input, signal, computed, inject } from '@angular/core';
+import { Component, input, output, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../services/data.service';
 import { Requirement, Status } from '../models/data.models';
@@ -13,6 +13,7 @@ import { Requirement, Status } from '../models/data.models';
 export class TableViewComponent {
   dataService = inject(DataService);
   requirements = input.required<Requirement[]>();
+  editReq = output<Requirement>();
   
   sortField = signal<keyof Requirement | 'date'>('date');
   sortDirection = signal<'asc' | 'desc'>('desc');
@@ -63,6 +64,11 @@ export class TableViewComponent {
       case 'Backlog': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  }
+
+  onEdit(req: Requirement, event: Event) {
+    event.stopPropagation();
+    this.editReq.emit(req);
   }
 
   deleteReq(id: string, event: Event) {

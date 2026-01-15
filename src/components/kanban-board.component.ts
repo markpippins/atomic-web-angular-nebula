@@ -22,17 +22,18 @@ export class KanbanBoardComponent {
   searchTerm = signal('');
   showModal = signal(false);
   showAiModal = signal(false);
-  showApiKeyModal = signal(false); // New modal signal
+  showApiKeyModal = signal(false);
   isGenerating = signal(false);
 
   // Form State
+  editingReqId = signal<string | null>(null);
   newReqTitle = '';
   newReqDesc = '';
   newReqPriority: 'Low' | 'Medium' | 'High' = 'Medium';
   
   // AI Form State
   userStoryPrompt = '';
-  apiKeyInput = ''; // API Key input
+  apiKeyInput = '';
 
   // Docs Editing State
   editableReadme = signal('');
@@ -111,14 +112,23 @@ export class KanbanBoardComponent {
   canAddRequirement = computed(() => !!this.selectedFeature());
 
   openAddModal() {
+    this.editingReqId.set(null);
     this.newReqTitle = '';
     this.newReqDesc = '';
+    this.newReqPriority = 'Medium';
+    this.showModal.set(true);
+  }
+
+  openEditModal(req: Requirement) {
+    this.editingReqId.set(req.id);
+    this.newReqTitle = req.title;
+    this.newReqDesc = req.description;
+    this.newReqPriority = req.priority;
     this.showModal.set(true);
   }
 
   openAiModal() {
     if (!this.aiEnabled()) {
-        // If not enabled, open config modal
         this.apiKeyInput = '';
         this.showApiKeyModal.set(true);
         return;
@@ -132,7 +142,6 @@ export class KanbanBoardComponent {
         const success = this.aiService.configure(this.apiKeyInput.trim());
         if (success) {
             this.showApiKeyModal.set(false);
-            // Re-open AI modal now that it is configured
             setTimeout(() => this.openAiModal(), 100); 
         } else {
             alert('Failed to configure AI service.');
@@ -150,7 +159,6 @@ export class KanbanBoardComponent {
     this.isGenerating.set(true);
     const context = `System: ${sys.name}, Subsystem: ${sub.name}, Feature: ${feat.name}`;
 
-    // Stack the documentation: System -> Subsystem -> Feature
     let docStack = '';
     if (sys.readme) docStack += `[SYSTEM DOCS]:\n${sys.readme}\n\n`;
     if (sub.readme) docStack += `[SUBSYSTEM DOCS]:\n${sub.readme}\n\n`;
@@ -159,7 +167,6 @@ export class KanbanBoardComponent {
     try {
       const generated = await this.aiService.generateRequirements(context, docStack, this.userStoryPrompt);
       
-      // Batch add
       generated.forEach(req => {
         this.dataService.addRequirement({
           title: req.title,
@@ -178,7 +185,20 @@ export class KanbanBoardComponent {
     }
   }
 
-  createManual() {
+  saveManual() {
+    // Edit mode
+    const editId = this.editingReqId();
+    if (editId) {
+        this.dataService.updateRequirement(editId, {
+            title: this.newReqTitle,
+            description: this.newReqDesc,
+            priority: this.newReqPriority
+        });
+        this.showModal.set(false);
+        return;
+    }
+
+    // Create mode
     const feat = this.selectedFeature();
     if (!feat) return;
 

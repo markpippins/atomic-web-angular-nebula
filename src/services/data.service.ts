@@ -217,6 +217,12 @@ export class DataService {
     ));
   }
 
+  updateRequirement(id: string, updates: Partial<Requirement>) {
+    this.requirements.update(reqs => reqs.map(r => 
+      r.id === id ? { ...r, ...updates } : r
+    ));
+  }
+
   deleteRequirement(id: string) {
     this.requirements.update(reqs => reqs.filter(r => r.id !== id));
   }
