@@ -1,6 +1,6 @@
 
 import { Injectable, signal, computed, effect } from '@angular/core';
-import { System, Subsystem, Feature, Requirement, Status } from '../models/data.models';
+import { System, Subsystem, Feature, Requirement, Status, WorkSession, FolderCategory } from '../models/data.models';
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +9,7 @@ export class DataService {
   // --- State Signals ---
   readonly systems = signal<System[]>([]);
   readonly requirements = signal<Requirement[]>([]);
+  readonly workSessions = signal<WorkSession[]>([]);
   
   // --- Computed State for UI ---
   readonly sortedSystems = computed(() => {
@@ -39,6 +40,7 @@ export class DataService {
     effect(() => {
       localStorage.setItem('nebula_systems', JSON.stringify(this.systems()));
       localStorage.setItem('nebula_requirements', JSON.stringify(this.requirements()));
+      localStorage.setItem('nebula_sessions', JSON.stringify(this.workSessions()));
     });
 
     // Auto-save theme & Apply to DOM
@@ -56,6 +58,7 @@ export class DataService {
   private loadFromStorage() {
     const savedSystems = localStorage.getItem('nebula_systems');
     const savedReqs = localStorage.getItem('nebula_requirements');
+    const savedSessions = localStorage.getItem('nebula_sessions');
 
     if (savedSystems) {
       this.systems.set(JSON.parse(savedSystems));
@@ -66,6 +69,10 @@ export class DataService {
 
     if (savedReqs) {
       this.requirements.set(JSON.parse(savedReqs));
+    }
+
+    if (savedSessions) {
+      this.workSessions.set(JSON.parse(savedSessions));
     }
   }
 
@@ -92,6 +99,10 @@ export class DataService {
       name: 'E-Commerce Platform',
       description: 'Main customer facing retail platform',
       readme: '# E-Commerce Platform Architecture\nThis system handles all customer-facing interactions.\n\n## Tech Stack\n- Angular 18\n- Node.js API\n- PostgreSQL',
+      folders: [
+        { id: crypto.randomUUID(), name: 'webapp', category: 'UI', note: 'Main storefront angular app' },
+        { id: crypto.randomUUID(), name: 'api-gateway', category: 'Service', note: 'BFF for mobile and web' }
+      ],
       subsystems: [{
         id: subId,
         name: 'Checkout',
@@ -120,6 +131,7 @@ export class DataService {
       id: crypto.randomUUID(),
       name,
       description,
+      folders: [],
       subsystems: []
     };
     this.systems.update(s => [...s, newSystem]);
@@ -161,6 +173,35 @@ export class DataService {
           return sub;
         });
         return { ...sys, subsystems: updatedSubsystems };
+      }
+      return sys;
+    }));
+  }
+
+  // --- Folder Management ---
+  
+  addSystemFolder(systemId: string, folder: { name: string, category: FolderCategory, note: string }) {
+    this.systems.update(systems => systems.map(sys => {
+      if (sys.id === systemId) {
+        return {
+          ...sys,
+          folders: [...(sys.folders || []), {
+            id: crypto.randomUUID(),
+            ...folder
+          }]
+        };
+      }
+      return sys;
+    }));
+  }
+
+  deleteSystemFolder(systemId: string, folderId: string) {
+    this.systems.update(systems => systems.map(sys => {
+      if (sys.id === systemId) {
+        return {
+          ...sys,
+          folders: (sys.folders || []).filter(f => f.id !== folderId)
+        };
       }
       return sys;
     }));
@@ -231,6 +272,8 @@ export class DataService {
     this.systems.update(s => s.filter(sys => sys.id !== id));
     // Cascade delete requirements
     this.requirements.update(reqs => reqs.filter(r => r.systemId !== id));
+    // Cascade delete sessions
+    this.workSessions.update(ws => ws.filter(s => s.parentId !== id)); 
     
     if (this.selectedSystemId() === id) {
       this.selectedSystemId.set(null);
@@ -280,5 +323,26 @@ export class DataService {
     if (this.selectedFeatureId() === featId) {
       this.selectedFeatureId.set(null);
     }
+  }
+
+  // --- Work Sessions ---
+  addWorkSession(session: Omit<WorkSession, 'id' | 'createdAt' | 'updatedAt'>) {
+    const newSession: WorkSession = {
+        ...session,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    };
+    this.workSessions.update(s => [newSession, ...s]);
+  }
+
+  updateWorkSession(id: string, updates: Partial<WorkSession>) {
+      this.workSessions.update(sessions => sessions.map(s => 
+          s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s
+      ));
+  }
+
+  deleteWorkSession(id: string) {
+      this.workSessions.update(s => s.filter(session => session.id !== id));
   }
 }

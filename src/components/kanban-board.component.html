@@ -1,164 +1,277 @@
 
-<div class="h-full flex flex-col">
-  <!-- Toolbar -->
-  <div class="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between px-6 shadow-sm z-10 gap-4 transition-colors">
-    <!-- Context Title -->
-    <div class="min-w-[200px]">
-       <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 truncate">
-         @if(selectedFeature()) {
-           Feature: {{ selectedFeature()?.name }}
-         } @else if (selectedSubsystem()) {
-           Subsystem: {{ selectedSubsystem()?.name }}
-         } @else if (selectedSystem()) {
-           System: {{ selectedSystem()?.name }}
-         } @else {
-           All Requirements
-         }
-       </h1>
-       <p class="text-xs text-gray-500 dark:text-gray-400">
-         @if(viewMode() === 'docs') {
-             Context Documentation
-         } @else {
-             {{ filteredRequirements().length }} items found
-         }
-       </p>
-    </div>
+<div class="h-full flex flex-row overflow-hidden bg-gray-50 dark:bg-gray-900 transition-colors">
+  
+  <!-- Vertical View Switcher -->
+  <div class="w-16 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-6 gap-6 z-20 shadow-sm transition-colors">
+      
+      <!-- Board View -->
+      <button 
+        (click)="viewMode.set('board')"
+        [class]="viewMode() === 'board' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
+        title="Kanban Board"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+        </svg>
+      </button>
 
-    <!-- Center: Search and View Switcher -->
-    <div class="flex-1 flex items-center justify-center gap-4">
-        <!-- Search (Hidden in Docs mode) -->
-        <div class="relative w-64" [class.invisible]="viewMode() === 'docs'">
-           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-             <svg class="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-           </div>
-           <input 
-             type="text" 
-             [ngModel]="searchTerm()"
-             (ngModelChange)="searchTerm.set($event)"
-             class="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-1.5 border"
-             placeholder="Search requirements..."
-           >
-        </div>
+      <!-- Table View -->
+      <button 
+        (click)="viewMode.set('table')"
+        [class]="viewMode() === 'table' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
+        title="Table View"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      </button>
 
-        <!-- View Toggle -->
-        <div class="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex items-center shadow-inner">
-           <button 
-             (click)="viewMode.set('board')"
-             [class]="viewMode() === 'board' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-             class="px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2"
-           >
-             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-             Board
-           </button>
-           <button 
-             (click)="viewMode.set('table')"
-             [class]="viewMode() === 'table' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-             class="px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2"
-           >
-             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-             Table
-           </button>
-            <button 
-             (click)="viewMode.set('docs')"
-             [class]="viewMode() === 'docs' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-             class="px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2"
-           >
-             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-             Docs
-           </button>
-        </div>
-    </div>
+      <!-- Docs View -->
+      <button 
+        (click)="viewMode.set('docs')"
+        [class]="viewMode() === 'docs' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
+        title="Documentation"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </button>
 
-    <!-- Add Buttons -->
-    <div class="min-w-[150px] flex justify-end gap-2">
-        <button 
-          (click)="copyPrompt()"
-          class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
-          title="Copy Context Prompt"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-          </svg>
-          <span class="hidden xl:inline">Export Context</span>
-        </button>
-
-        <button 
-          [disabled]="aiEnabled() && !canAddRequirement()"
-          (click)="openAiModal()"
-          class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
-          [title]="aiEnabled() ? 'Generate with AI' : 'Configure AI Key'"
-        >
-          @if(aiEnabled()) {
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-               <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
-             </svg>
-             <span class="hidden xl:inline">AI Gen</span>
-          } @else {
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
-             </svg>
-             <span class="hidden xl:inline">Setup AI</span>
-          }
-        </button>
-        
-        <button 
-          [disabled]="!canAddRequirement()"
-          (click)="openAddModal()"
-          class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-          </svg>
-          New Requirement
-        </button>
-    </div>
+      <!-- Sessions View -->
+      <button 
+        (click)="viewMode.set('sessions')"
+        [class]="viewMode() === 'sessions' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
+        title="Work Sessions"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
   </div>
 
-  <!-- View Area -->
-  @if (viewMode() === 'board') {
-     <app-board-view 
-       [requirements]="filteredRequirements()"
-       (copyReqPrompt)="copyPrompt($event)"
-     ></app-board-view>
-  } @else if (viewMode() === 'table') {
-     <app-table-view 
-       [requirements]="filteredRequirements()" 
-       (editReq)="openEditModal($event)"
-       (copyReqPrompt)="copyPrompt($event)"
-     ></app-table-view>
-  } @else {
-     <!-- Documentation View -->
-     <div class="flex-1 p-6 h-full overflow-hidden flex flex-col">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1 flex flex-col overflow-hidden">
-            <div class="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    <span class="font-semibold text-gray-700 dark:text-gray-200">
-                        @if(selectedFeature()) { Feature Documentation }
-                        @else if(selectedSubsystem()) { Subsystem Documentation }
-                        @else if(selectedSystem()) { System Documentation }
-                        @else { Select an item to view documentation }
-                    </span>
-                </div>
-                <button (click)="saveReadme()" class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors">Save Changes</button>
-            </div>
-            
-            @if (selectedSystem()) {
-                <textarea 
-                    class="flex-1 w-full p-6 resize-none focus:outline-none dark:bg-gray-800 dark:text-gray-200 font-mono text-sm leading-relaxed" 
-                    [(ngModel)]="editableReadme"
-                    placeholder="# Add documentation here...
-                    
-This content will be used as context for the AI when generating requirements."
-                ></textarea>
+  <!-- Content Area -->
+  <div class="flex-1 flex flex-col min-w-0 h-full">
+    
+    <!-- Toolbar -->
+    <div class="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between px-6 shadow-sm z-10 gap-4 transition-colors">
+      <!-- Context Title -->
+      <div class="min-w-[200px] flex-1">
+         <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 truncate">
+           @if(selectedFeature()) {
+             Feature: {{ selectedFeature()?.name }}
+           } @else if (selectedSubsystem()) {
+             Subsystem: {{ selectedSubsystem()?.name }}
+           } @else if (selectedSystem()) {
+             System: {{ selectedSystem()?.name }}
+           } @else {
+             All Requirements
+           }
+         </h1>
+         <p class="text-xs text-gray-500 dark:text-gray-400">
+           @if(viewMode() === 'docs') {
+               Context Documentation
+           } @else if (viewMode() === 'sessions') {
+               Context Export History
+           } @else {
+               {{ filteredRequirements().length }} items found
+           }
+         </p>
+      </div>
+
+      <!-- Search -->
+      <div class="flex items-center justify-center" [class.invisible]="viewMode() === 'docs' || viewMode() === 'sessions'">
+          <div class="relative w-72">
+             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+               <svg class="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+             </div>
+             <input 
+               type="text" 
+               [ngModel]="searchTerm()"
+               (ngModelChange)="searchTerm.set($event)"
+               class="block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
+               placeholder="Search requirements..."
+             >
+          </div>
+      </div>
+
+      <!-- Add Buttons -->
+      <div class="min-w-[150px] flex justify-end gap-2 flex-1">
+          <button 
+            (click)="copyPrompt()"
+            class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
+            title="Copy Context Prompt"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+            </svg>
+            <span class="hidden xl:inline">Export</span>
+          </button>
+
+          <button 
+            [disabled]="aiEnabled() && !canAddRequirement()"
+            (click)="openAiModal()"
+            class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
+            [title]="aiEnabled() ? 'Generate with AI' : 'Configure AI Key'"
+          >
+            @if(aiEnabled()) {
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                 <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
+               </svg>
+               <span class="hidden xl:inline">AI Gen</span>
             } @else {
-                <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                    <p>Select a System, Subsystem, or Feature to edit its documentation.</p>
-                </div>
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+               </svg>
+               <span class="hidden xl:inline">Setup AI</span>
             }
-        </div>
-     </div>
-  }
+          </button>
+          
+          <button 
+            [disabled]="!canAddRequirement()"
+            (click)="openAddModal()"
+            class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            <span class="hidden xl:inline">New</span>
+          </button>
+      </div>
+    </div>
+
+    <!-- View Area -->
+    <div class="flex-1 overflow-hidden relative">
+      @if (viewMode() === 'board') {
+         <app-board-view 
+           [requirements]="filteredRequirements()"
+           (copyReqPrompt)="copyPrompt($event)"
+         ></app-board-view>
+      } @else if (viewMode() === 'table') {
+         <app-table-view 
+           [requirements]="filteredRequirements()" 
+           (editReq)="openEditModal($event)"
+           (copyReqPrompt)="copyPrompt($event)"
+         ></app-table-view>
+      } @else if (viewMode() === 'sessions') {
+         <app-work-session-view></app-work-session-view>
+      } @else {
+         <!-- Documentation View -->
+         <div class="flex-1 p-6 h-full overflow-hidden flex flex-col">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1 flex flex-col overflow-hidden">
+                <!-- Docs Header -->
+                <div class="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span class="font-semibold text-gray-700 dark:text-gray-200">
+                            @if(selectedFeature()) { Feature Documentation }
+                            @else if(selectedSubsystem()) { Subsystem Documentation }
+                            @else if(selectedSystem()) { System Documentation }
+                            @else { Select an item to view documentation }
+                        </span>
+                    </div>
+                    
+                    @if (selectedSystem()) {
+                       <div class="flex items-center gap-3">
+                          <!-- Hidden File Input -->
+                          <input #fileInput type="file" class="hidden" (change)="onFileSelected($event)" accept=".md,.txt,.markdown">
+                          
+                          <!-- Import Group -->
+                          <div class="flex shadow-sm rounded-md isolate" role="group">
+                            <button 
+                              (click)="triggerImport('append', fileInput)"
+                              class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 transition-colors"
+                              title="Append content to the end"
+                            >
+                              Append MD
+                            </button>
+                            <button 
+                              (click)="triggerImport('replace', fileInput)"
+                              class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-l-0 border-gray-200 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 transition-colors"
+                              title="Replace entire content"
+                            >
+                              Replace MD
+                            </button>
+                          </div>
+
+                          <button (click)="saveReadme()" class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors shadow-sm">
+                            Save Changes
+                          </button>
+                       </div>
+                    }
+                </div>
+                
+                @if (selectedSystem()) {
+                   <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+                       <div class="flex-1 overflow-y-auto flex flex-col">
+                           
+                           <!-- System Folders Section (Only at System Level) -->
+                           @if (!selectedSubsystem()) {
+                               <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 flex-shrink-0">
+                                   <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">System Structure (Folders)</h3>
+                                   
+                                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                       @for (folder of selectedSystem()?.folders || []; track folder.id) {
+                                           <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-700/50 group relative shadow-sm hover:shadow transition-shadow">
+                                                <div class="flex justify-between items-start mb-2">
+                                                    <div class="flex items-center gap-2 min-w-0">
+                                                        <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+                                                        <span class="font-medium text-gray-800 dark:text-gray-200 text-sm truncate" [title]="folder.name">{{ folder.name }}</span>
+                                                    </div>
+                                                    <button (click)="deleteFolder(folder.id)" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5">
+                                                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    </button>
+                                                </div>
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span [class]="getCategoryClass(folder.category)" class="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">{{ folder.category }}</span>
+                                                </div>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2" [title]="folder.note">{{ folder.note }}</p>
+                                           </div>
+                                       }
+                                       
+                                       <!-- Add Folder Card -->
+                                       <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 flex flex-col gap-2 bg-gray-50 dark:bg-gray-800/30">
+                                           <input type="text" [ngModel]="newFolderName()" (ngModelChange)="newFolderName.set($event)" placeholder="Folder Name" class="text-sm bg-transparent border-none focus:ring-0 p-0 placeholder-gray-400 text-gray-800 dark:text-white font-medium">
+                                           <div class="flex gap-2">
+                                                <select [ngModel]="newFolderCategory()" (ngModelChange)="newFolderCategory.set($event)" class="text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded py-1 px-1 text-gray-700 dark:text-gray-300 w-full focus:ring-blue-500 focus:border-blue-500">
+                                                   <option value="UI">UI</option>
+                                                   <option value="Service">Service</option>
+                                                   <option value="Library">Library</option>
+                                                </select>
+                                           </div>
+                                           <input type="text" [ngModel]="newFolderNote()" (ngModelChange)="newFolderNote.set($event)" placeholder="Short context note..." class="text-xs bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 p-1 w-full text-gray-600 dark:text-gray-300 focus:outline-none mb-1">
+                                           <button (click)="addFolder()" [disabled]="!newFolderName()" class="mt-auto w-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 py-1.5 rounded hover:bg-blue-200 dark:hover:bg-blue-900/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium">Add Folder</button>
+                                       </div>
+                                   </div>
+                               </div>
+                           }
+
+                           <!-- Editor Area -->
+                           <div class="flex-1 flex flex-col p-6 min-h-[400px]">
+                               <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Context Documentation (Markdown)</label>
+                               <textarea 
+                                   class="flex-1 w-full p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-mono text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50" 
+                                   [(ngModel)]="editableReadme"
+                                   placeholder="# Add documentation here...
+                                   
+This content will be used as context for the AI when generating requirements."
+                               ></textarea>
+                           </div>
+                       </div>
+                   </div>
+                } @else {
+                    <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                        <p>Select a System, Subsystem, or Feature to edit its documentation.</p>
+                    </div>
+                }
+            </div>
+         </div>
+      }
+    </div>
+  </div>
 </div>
 
 <!-- Create/Edit Modal -->
@@ -282,6 +395,73 @@ This content will be used as context for the AI when generating requirements."
            class="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 flex items-center gap-2"
          >
            Generate Requirements
+         </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- Export/Work Session Modal -->
+@if (showExportModal()) {
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[80vh] transition-colors">
+      
+      <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-blue-50 dark:bg-blue-900/20">
+         <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Create Work Session</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Context: {{ exportParentName() }} ({{ exportParentType() }})</p>
+            </div>
+         </div>
+         <button (click)="showExportModal.set(false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+         </button>
+      </div>
+
+      <div class="p-6 flex-1 flex flex-col overflow-hidden">
+         <div class="grid grid-cols-2 gap-4 mb-4">
+             <div>
+                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Platform</label>
+                 <select [(ngModel)]="exportPlatform" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border">
+                    @for(p of platforms; track p) {
+                        <option [value]="p">{{ p }}</option>
+                    }
+                 </select>
+             </div>
+             <div>
+                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Model</label>
+                 <select [(ngModel)]="exportModel" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border">
+                    @for(m of availableModels(); track m) {
+                        <option [value]="m">{{ m }}</option>
+                    }
+                 </select>
+             </div>
+         </div>
+         
+         <div class="flex-1 flex flex-col">
+             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Generated Context (Editable)</label>
+             <textarea 
+                [(ngModel)]="exportContextText"
+                class="flex-1 w-full border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-4 border font-mono text-sm resize-none"
+             ></textarea>
+         </div>
+      </div>
+      
+      <div class="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
+         <button (click)="showExportModal.set(false)" class="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+         <button 
+           (click)="saveExportSession()" 
+           class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 flex items-center gap-2"
+         >
+           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+           </svg>
+           Create Session & Copy
          </button>
       </div>
 
