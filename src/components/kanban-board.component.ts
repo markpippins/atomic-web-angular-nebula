@@ -342,10 +342,36 @@ export class KanbanBoardComponent {
       this.exportParentType.set('Requirement');
       this.exportParentName.set(req.title);
     } else {
+        // ROLL-UP REQUIREMENTS LOGIC
+        const allReqs = this.dataService.requirements();
+        let scopeReqs: Requirement[] = [];
+
+        if (feat) {
+            scopeReqs = allReqs.filter(r => r.featureId === feat.id);
+        } else if (sub) {
+            scopeReqs = allReqs.filter(r => r.subsystemId === sub.id);
+        } else if (sys) {
+            scopeReqs = allReqs.filter(r => r.systemId === sys.id);
+        } else {
+             // Fallback for "All Requirements" view if nothing selected
+             scopeReqs = allReqs; 
+        }
+
+        if (scopeReqs.length > 0) {
+            content += 'SCOPE REQUIREMENTS\n==================\n';
+            scopeReqs.forEach((r, index) => {
+                content += `${index + 1}. [${r.status}] ${r.title} (Priority: ${r.priority})\n`;
+                if (r.description) {
+                    content += `   Details: ${r.description.replace(/\n/g, '\n   ')}\n`;
+                }
+                content += '\n';
+            });
+        }
+
         content += 'TASK\n====\n';
-        content += '[Enter instruction here, e.g., Generate test cases, Implement this feature, etc.]\n';
+        content += '[Enter instruction here, e.g., Implement the requirements listed above, Generate test plan, etc.]\n';
         
-        // Determine parent scope
+        // Determine parent scope IDs for the session record
         if (feat) {
             this.exportParentId.set(feat.id);
             this.exportParentType.set('Feature');
