@@ -1,5 +1,5 @@
 
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../services/data.service';
 import { Requirement, Status } from '../models/data.models';
@@ -13,6 +13,7 @@ import { Requirement, Status } from '../models/data.models';
 export class BoardViewComponent {
   dataService = inject(DataService);
   requirements = input.required<Requirement[]>();
+  copyReqPrompt = output<Requirement>();
 
   columns: Status[] = ['Backlog', 'ToDo', 'InProgress', 'Done'];
   draggedReqId: string | null = null;
@@ -39,6 +40,11 @@ export class BoardViewComponent {
     if(confirm('Delete requirement?')) {
       this.dataService.deleteRequirement(id);
     }
+  }
+
+  onCopy(req: Requirement, event: Event) {
+    event.stopPropagation();
+    this.copyReqPrompt.emit(req);
   }
 
   // --- Drag and Drop Logic ---

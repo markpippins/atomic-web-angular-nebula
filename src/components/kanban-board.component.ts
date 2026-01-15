@@ -142,7 +142,7 @@ export class KanbanBoardComponent {
         const success = this.aiService.configure(this.apiKeyInput.trim());
         if (success) {
             this.showApiKeyModal.set(false);
-            setTimeout(() => this.openAiModal(), 100); 
+            // Do not automatically open the AI generation modal
         } else {
             alert('Failed to configure AI service.');
         }
@@ -212,5 +212,43 @@ export class KanbanBoardComponent {
       featureId: feat.id
     });
     this.showModal.set(false);
+  }
+
+  copyPrompt(req?: Requirement) {
+    const sys = this.selectedSystem();
+    const sub = this.selectedSubsystem();
+    const feat = this.selectedFeature();
+    
+    let content = 'PROJECT CONTEXT\n===============\n';
+    if (sys) content += `System: ${sys.name}\nDescription: ${sys.description}\n\n`;
+    if (sub) content += `Subsystem: ${sub.name}\nDescription: ${sub.description}\n\n`;
+    if (feat) content += `Feature: ${feat.name}\nDescription: ${feat.description}\n\n`;
+
+    content += 'DOCUMENTATION\n=============\n';
+    if (sys?.readme) content += `[SYSTEM: ${sys.name}]\n${sys.readme}\n\n`;
+    if (sub?.readme) content += `[SUBSYSTEM: ${sub.name}]\n${sub.readme}\n\n`;
+    if (feat?.readme) content += `[FEATURE: ${feat.name}]\n${feat.readme}\n\n`;
+
+    if (req) {
+      content += 'SELECTED REQUIREMENT\n====================\n';
+      content += `Title: ${req.title}\n`;
+      content += `Status: ${req.status}\n`;
+      content += `Priority: ${req.priority}\n`;
+      content += `Description:\n${req.description}\n`;
+      
+      content += '\nTASK\n====\n';
+      content += `[Generate implementation steps, test cases, or code for: "${req.title}"]\n`;
+    } else {
+        content += 'TASK\n====\n';
+        content += '[Enter instruction here, e.g., Generate test cases, Implement this feature, etc.]\n';
+    }
+    
+    navigator.clipboard.writeText(content).then(() => {
+        const type = req ? 'Requirement' : 'Context';
+        alert(`${type} prompt copied to clipboard!`);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        alert('Failed to copy to clipboard.');
+    });
   }
 }

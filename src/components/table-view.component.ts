@@ -14,6 +14,7 @@ export class TableViewComponent {
   dataService = inject(DataService);
   requirements = input.required<Requirement[]>();
   editReq = output<Requirement>();
+  copyReqPrompt = output<Requirement>();
   
   sortField = signal<keyof Requirement | 'date'>('date');
   sortDirection = signal<'asc' | 'desc'>('desc');
@@ -69,6 +70,11 @@ export class TableViewComponent {
   onEdit(req: Requirement, event: Event) {
     event.stopPropagation();
     this.editReq.emit(req);
+  }
+
+  onCopy(req: Requirement, event: Event) {
+    event.stopPropagation();
+    this.copyReqPrompt.emit(req);
   }
 
   deleteReq(id: string, event: Event) {
