@@ -63,6 +63,13 @@ export class HierarchyNavComponent {
     }
   }
 
+  updateSubsystemColor(systemId: string, subId: string, event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input && input.value) {
+        this.dataService.updateSubsystemColor(systemId, subId, input.value);
+    }
+  }
+
   deleteSystem(id: string, event: Event) {
     event.stopPropagation();
     if (confirm('Delete this system? All subsystems and requirements inside it will be lost.')) {

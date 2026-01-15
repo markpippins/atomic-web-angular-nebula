@@ -19,6 +19,8 @@ export class TableViewComponent {
   sortField = signal<keyof Requirement | 'date'>('date');
   sortDirection = signal<'asc' | 'desc'>('desc');
 
+  subsystemColors = computed(() => this.dataService.subsystemColorMap());
+
   sortedRequirements = computed(() => {
     const reqs = [...this.requirements()];
     const field = this.sortField();

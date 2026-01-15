@@ -44,6 +44,8 @@ export class KanbanBoardComponent {
   exportParentId = signal('');
   exportParentType = signal<'System' | 'Subsystem' | 'Feature' | 'Requirement'>('System');
   exportParentName = signal('');
+  includeInProgress = signal(false);
+  pendingExportReqIds = signal<string[]>([]); // Store IDs to update status later
   
   // Platform Data
   platforms = Object.keys(AI_PLATFORMS);
@@ -304,7 +306,26 @@ export class KanbanBoardComponent {
 
   // --- Export Logic ---
 
+  toggleExportFilter() {
+     this.includeInProgress.update(v => !v);
+     // Re-generate context with new filter
+     this.generateExportContext(this.includeInProgress());
+  }
+
   copyPrompt(req?: Requirement) {
+      if (req) {
+          // Single Requirement Export
+          this.generateExportContext(false, req);
+          this.showExportModal.set(true);
+      } else {
+          // Scope Export (Default: ToDo only)
+          this.includeInProgress.set(false);
+          this.generateExportContext(false);
+          this.showExportModal.set(true);
+      }
+  }
+
+  generateExportContext(includeInProgress: boolean, singleReq?: Requirement) {
     const sys = this.selectedSystem();
     const sub = this.selectedSubsystem();
     const feat = this.selectedFeature();
@@ -328,19 +349,20 @@ export class KanbanBoardComponent {
         content += `\n`;
     }
 
-    if (req) {
+    if (singleReq) {
       content += 'SELECTED REQUIREMENT\n====================\n';
-      content += `Title: ${req.title}\n`;
-      content += `Status: ${req.status}\n`;
-      content += `Priority: ${req.priority}\n`;
-      content += `Description:\n${req.description}\n`;
+      content += `Title: ${singleReq.title}\n`;
+      content += `Status: ${singleReq.status}\n`;
+      content += `Priority: ${singleReq.priority}\n`;
+      content += `Description:\n${singleReq.description}\n`;
       
       content += '\nTASK\n====\n';
-      content += `[Generate implementation steps, test cases, or code for: "${req.title}"]\n`;
+      content += `[Generate implementation steps, test cases, or code for: "${singleReq.title}"]\n`;
       
-      this.exportParentId.set(req.id);
+      this.exportParentId.set(singleReq.id);
       this.exportParentType.set('Requirement');
-      this.exportParentName.set(req.title);
+      this.exportParentName.set(singleReq.title);
+      this.pendingExportReqIds.set([]); // No status update for single export? Or should we? Assuming no for now based on req.
     } else {
         // ROLL-UP REQUIREMENTS LOGIC
         const allReqs = this.dataService.requirements();
@@ -353,13 +375,19 @@ export class KanbanBoardComponent {
         } else if (sys) {
             scopeReqs = allReqs.filter(r => r.systemId === sys.id);
         } else {
-             // Fallback for "All Requirements" view if nothing selected
              scopeReqs = allReqs; 
         }
 
-        if (scopeReqs.length > 0) {
+        // Apply Status Filter
+        // Default: ToDo. With Toggle: ToDo + InProgress
+        const allowedStatuses: Status[] = includeInProgress ? ['ToDo', 'InProgress'] : ['ToDo'];
+        
+        const filteredReqs = scopeReqs.filter(r => allowedStatuses.includes(r.status));
+        this.pendingExportReqIds.set(filteredReqs.map(r => r.id));
+
+        if (filteredReqs.length > 0) {
             content += 'SCOPE REQUIREMENTS\n==================\n';
-            scopeReqs.forEach((r, index) => {
+            filteredReqs.forEach((r, index) => {
                 content += `${index + 1}. [${r.status}] ${r.title} (Priority: ${r.priority})\n`;
                 if (r.description) {
                     content += `   Details: ${r.description.replace(/\n/g, '\n   ')}\n`;
@@ -388,7 +416,6 @@ export class KanbanBoardComponent {
     }
     
     this.exportContextText.set(content);
-    this.showExportModal.set(true);
   }
 
   saveExportSession() {
@@ -410,8 +437,14 @@ export class KanbanBoardComponent {
           console.error('Copy failed', err);
           alert('Session Created, but failed to copy text automatically.');
       });
+      
+      // 3. Update Requirements Status
+      // "exporting context should move all associated requirements the In Progress status."
+      if (this.pendingExportReqIds().length > 0) {
+          this.dataService.batchUpdateRequirementStatus(this.pendingExportReqIds(), 'InProgress');
+      }
 
-      // 3. Close & Reset
+      // 4. Close & Reset
       this.showExportModal.set(false);
   }
 }

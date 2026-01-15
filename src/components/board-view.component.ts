@@ -1,5 +1,5 @@
 
-import { Component, inject, input, output } from '@angular/core';
+import { Component, inject, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../services/data.service';
 import { Requirement, Status } from '../models/data.models';
@@ -14,9 +14,12 @@ export class BoardViewComponent {
   dataService = inject(DataService);
   requirements = input.required<Requirement[]>();
   copyReqPrompt = output<Requirement>();
+  editReq = output<Requirement>();
 
   columns: Status[] = ['Backlog', 'ToDo', 'InProgress', 'Done'];
   draggedReqId: string | null = null;
+  
+  subsystemColors = computed(() => this.dataService.subsystemColorMap());
 
   getRequirementsByStatus(status: Status) {
     return this.requirements().filter(r => r.status === status);
@@ -45,6 +48,11 @@ export class BoardViewComponent {
   onCopy(req: Requirement, event: Event) {
     event.stopPropagation();
     this.copyReqPrompt.emit(req);
+  }
+
+  onEdit(req: Requirement, event: Event) {
+      event.stopPropagation();
+      this.editReq.emit(req);
   }
 
   // --- Drag and Drop Logic ---

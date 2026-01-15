@@ -24,6 +24,7 @@ export interface Subsystem {
   name: string;
   description: string;
   readme?: string; // Context/Documentation
+  color?: string; // UI Color identifier
   features: Feature[];
   systemId: string; // Parent reference
 }

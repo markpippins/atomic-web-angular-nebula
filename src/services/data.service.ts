@@ -24,6 +24,17 @@ export class DataService {
     })).sort(sortByName);
   });
 
+  // Global map of subsystem IDs to colors for easy lookup in views
+  readonly subsystemColorMap = computed(() => {
+    const map = new Map<string, string>();
+    this.systems().forEach(sys => {
+      sys.subsystems.forEach(sub => {
+        if (sub.color) map.set(sub.id, sub.color);
+      });
+    });
+    return map;
+  });
+
   // --- UI State ---
   readonly darkMode = signal<boolean>(false);
 
@@ -31,6 +42,22 @@ export class DataService {
   readonly selectedSystemId = signal<string | null>(null);
   readonly selectedSubsystemId = signal<string | null>(null);
   readonly selectedFeatureId = signal<string | null>(null);
+
+  // Palette for subsystems
+  private readonly colorPalette = [
+    '#EF4444', // Red
+    '#F97316', // Orange
+    '#F59E0B', // Amber
+    '#10B981', // Emerald
+    '#06B6D4', // Cyan
+    '#3B82F6', // Blue
+    '#6366F1', // Indigo
+    '#8B5CF6', // Violet
+    '#EC4899', // Pink
+    '#F43F5E', // Rose
+    '#84CC16', // Lime
+    '#14B8A6', // Teal
+  ];
 
   constructor() {
     this.loadFromStorage();
@@ -89,6 +116,19 @@ export class DataService {
     this.darkMode.update(d => !d);
   }
 
+  private getUniqueColor(systemId: string): string {
+    const system = this.systems().find(s => s.id === systemId);
+    if (!system) return this.colorPalette[0];
+
+    const usedColors = new Set(system.subsystems.map(s => s.color));
+    
+    // Find first unused color
+    const available = this.colorPalette.find(c => !usedColors.has(c));
+    
+    // Return available or random if all used
+    return available || this.colorPalette[Math.floor(Math.random() * this.colorPalette.length)];
+  }
+
   private seedData() {
     const sysId = crypto.randomUUID();
     const subId = crypto.randomUUID();
@@ -108,6 +148,7 @@ export class DataService {
         name: 'Checkout',
         description: 'Payment and Order processing',
         readme: '## Checkout Flow\n1. Cart validation\n2. User auth check\n3. Shipping address\n4. Payment processing',
+        color: '#10B981',
         systemId: sysId,
         features: [{
           id: featId,
@@ -138,6 +179,8 @@ export class DataService {
   }
 
   addSubsystem(systemId: string, name: string, description: string) {
+    const color = this.getUniqueColor(systemId);
+    
     this.systems.update(systems => systems.map(sys => {
       if (sys.id === systemId) {
         return {
@@ -146,9 +189,24 @@ export class DataService {
             id: crypto.randomUUID(),
             name,
             description,
+            color,
             features: [],
             systemId
           }]
+        };
+      }
+      return sys;
+    }));
+  }
+
+  updateSubsystemColor(systemId: string, subsystemId: string, color: string) {
+    this.systems.update(systems => systems.map(sys => {
+      if (sys.id === systemId) {
+        return {
+          ...sys,
+          subsystems: sys.subsystems.map(sub => 
+             sub.id === subsystemId ? { ...sub, color } : sub
+          )
         };
       }
       return sys;
@@ -256,6 +314,14 @@ export class DataService {
     this.requirements.update(reqs => reqs.map(r => 
       r.id === id ? { ...r, status: newStatus } : r
     ));
+  }
+
+  // Batch update for Export Rollup
+  batchUpdateRequirementStatus(ids: string[], newStatus: Status) {
+      if (!ids.length) return;
+      this.requirements.update(reqs => reqs.map(r => 
+        ids.includes(r.id) ? { ...r, status: newStatus } : r
+      ));
   }
 
   updateRequirement(id: string, updates: Partial<Requirement>) {

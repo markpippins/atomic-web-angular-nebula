@@ -4,6 +4,9 @@
     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
       <thead class="bg-gray-50 dark:bg-gray-700/50">
         <tr>
+          <!-- System Color Indicator -->
+          <th class="px-6 py-3 w-4"></th>
+          
           @let fields = [
             { key: 'title', label: 'Title' },
             { key: 'status', label: 'Status' },
@@ -34,7 +37,18 @@
       </thead>
       <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
         @for (req of sortedRequirements(); track req.id) {
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+          <tr 
+             class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+             (dblclick)="onEdit(req, $event)"
+             title="Double click to edit"
+          >
+            <td class="px-6 py-4">
+                <div 
+                   class="w-3 h-3 rounded-full shadow-sm ring-1 ring-black/10 dark:ring-white/10" 
+                   [style.background-color]="subsystemColors().get(req.subsystemId) || '#e5e7eb'"
+                   title="Subsystem Color"
+                ></div>
+            </td>
             <td class="px-6 py-4">
               <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ req.title }}</div>
               <div class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">{{ req.description }}</div>
@@ -64,7 +78,7 @@
           </tr>
         } @empty {
             <tr>
-                <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+                <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
                    No requirements found matching your criteria.
                 </td>
             </tr>
