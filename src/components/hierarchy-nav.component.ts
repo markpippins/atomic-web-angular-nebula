@@ -22,6 +22,10 @@ export class HierarchyNavComponent {
   newSubsystemName = '';
   newFeatureName = '';
 
+  // --- Inline Editing State ---
+  editingItem = signal<{ type: 'System' | 'Subsystem' | 'Feature', id: string, systemId?: string, subsystemId?: string } | null>(null);
+  editingName = signal('');
+
   // --- Move/Reparent Modal State ---
   showMoveModal = signal(false);
   moveTargetType = signal<'System' | 'Subsystem' | 'Feature'>('System'); // What we are moving
@@ -121,6 +125,51 @@ export class HierarchyNavComponent {
     }
   }
 
+  // --- Inline Editing Logic ---
+  startEditing(
+      type: 'System' | 'Subsystem' | 'Feature', 
+      item: {id: string, name: string}, 
+      event: Event, 
+      systemId?: string, 
+      subsystemId?: string
+  ) {
+      event.stopPropagation();
+      this.editingItem.set({ type, id: item.id, systemId, subsystemId });
+      this.editingName.set(item.name);
+  }
+
+  saveEdit() {
+      const item = this.editingItem();
+      const newName = this.editingName().trim();
+      if (!item || !newName) {
+          this.cancelEdit();
+          return;
+      }
+      
+      switch(item.type) {
+          case 'System':
+              this.dataService.updateSystemName(item.id, newName);
+              break;
+          case 'Subsystem':
+              if (item.systemId) {
+                  this.dataService.updateSubsystemName(item.systemId, item.id, newName);
+              }
+              break;
+          case 'Feature':
+              if (item.systemId && item.subsystemId) {
+                  this.dataService.updateFeatureName(item.systemId, item.subsystemId, item.id, newName);
+              }
+              break;
+      }
+
+      this.cancelEdit();
+  }
+
+  cancelEdit() {
+      this.editingItem.set(null);
+      this.editingName.set('');
+  }
+
   // --- Move Logic ---
 
   initiateMove(type: 'System' | 'Subsystem' | 'Feature', item: System | Subsystem | Feature, event: Event) {
@@ -173,7 +222,8 @@ export class HierarchyNavComponent {
       if (this.moveTargetType() !== 'Feature') return [];
       const sysId = this.targetSystemIdForFeature();
       if (!sysId) return [];
-      const sys = this.dataService.systems().find(s => s.id === sysId);
+      const sys = this.dataService.sortedSystems().find(s => s.id === sysId);
+      // subsystems are pre-sorted in sortedSystems computed property
       return sys ? sys.subsystems : [];
   });
   
@@ -181,10 +231,11 @@ export class HierarchyNavComponent {
   availableSystems = computed(() => {
       const type = this.moveTargetType();
       const movingId = this.movingItemId();
+      const sorted = this.dataService.sortedSystems();
       // Exclude self if moving a system
       if (type === 'System') {
-          return this.dataService.systems().filter(s => s.id !== movingId);
+          return sorted.filter(s => s.id !== movingId);
       }
-      return this.dataService.systems();
+      return sorted;
   });
 }

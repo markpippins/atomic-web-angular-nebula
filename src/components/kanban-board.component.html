@@ -1,58 +1,5 @@
 
 <div class="h-full flex flex-row overflow-hidden bg-gray-50 dark:bg-gray-900 transition-colors">
-  
-  <!-- Vertical View Switcher -->
-  <div class="w-16 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-6 gap-6 z-20 shadow-sm transition-colors">
-      
-      <!-- Board View -->
-      <button 
-        (click)="viewMode.set('board')"
-        [class]="viewMode() === 'board' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
-        title="Kanban Board"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-        </svg>
-      </button>
-
-      <!-- Table View -->
-      <button 
-        (click)="viewMode.set('table')"
-        [class]="viewMode() === 'table' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
-        title="Table View"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-      </button>
-
-      <!-- Docs View -->
-      <button 
-        (click)="viewMode.set('docs')"
-        [class]="viewMode() === 'docs' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
-        title="Documentation"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      </button>
-
-      <!-- Sessions View -->
-      <button 
-        (click)="viewMode.set('sessions')"
-        [class]="viewMode() === 'sessions' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group relative"
-        title="Work Sessions"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </button>
-  </div>
-
   <!-- Content Area -->
   <div class="flex-1 flex flex-col min-w-0 h-full">
     
@@ -104,7 +51,7 @@
       </div>
 
       <!-- Search (Center/Right) -->
-      <div class="flex items-center justify-center flex-1" [class.invisible]="viewMode() === 'docs' || viewMode() === 'sessions'">
+      <div class="flex items-center justify-center flex-1" [class.invisible]="dataService.viewMode() === 'docs' || dataService.viewMode() === 'sessions'">
           <div class="relative w-72">
              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                <svg class="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -125,19 +72,19 @@
 
     <!-- View Area -->
     <div class="flex-1 overflow-hidden relative">
-      @if (viewMode() === 'board') {
+      @if (dataService.viewMode() === 'board') {
          <app-board-view 
            [requirements]="filteredRequirements()"
            (editReq)="openEditModal($event)"
            (copyReqPrompt)="copyPrompt($event)"
          ></app-board-view>
-      } @else if (viewMode() === 'table') {
+      } @else if (dataService.viewMode() === 'table') {
          <app-table-view 
            [requirements]="filteredRequirements()" 
            (editReq)="openEditModal($event)"
            (copyReqPrompt)="copyPrompt($event)"
          ></app-table-view>
-      } @else if (viewMode() === 'sessions') {
+      } @else if (dataService.viewMode() === 'sessions') {
          <app-work-session-view></app-work-session-view>
       } @else {
          <!-- Documentation View -->
@@ -218,9 +165,9 @@
                                            <input type="text" [ngModel]="newFolderName()" (ngModelChange)="newFolderName.set($event)" placeholder="Folder Name" class="text-sm bg-transparent border-none focus:ring-0 p-0 placeholder-gray-400 text-gray-800 dark:text-white font-medium">
                                            <div class="flex gap-2">
                                                 <select [ngModel]="newFolderCategory()" (ngModelChange)="newFolderCategory.set($event)" class="text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded py-1 px-1 text-gray-700 dark:text-gray-300 w-full focus:ring-blue-500 focus:border-blue-500">
-                                                   <option value="UI">UI</option>
-                                                   <option value="Service">Service</option>
-                                                   <option value="Library">Library</option>
+                                                   @for (cat of folderCategories; track cat) {
+                                                      <option [value]="cat">{{ cat }}</option>
+                                                   }
                                                 </select>
                                            </div>
                                            <input type="text" [ngModel]="newFolderNote()" (ngModelChange)="newFolderNote.set($event)" placeholder="Short context note..." class="text-xs bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 p-1 w-full text-gray-600 dark:text-gray-300 focus:outline-none mb-1">
@@ -269,9 +216,9 @@ This content will be used as context for the AI when generating requirements."
             </span>
         </div>
         <div class="text-gray-500 dark:text-gray-500">
-           @if(viewMode() === 'docs') {
+           @if(dataService.viewMode() === 'docs') {
                Context Documentation
-           } @else if (viewMode() === 'sessions') {
+           } @else if (dataService.viewMode() === 'sessions') {
                Context Export History
            } @else {
                {{ filteredRequirements().length }} items found
@@ -283,7 +230,7 @@ This content will be used as context for the AI when generating requirements."
 
 <!-- Create/Edit Modal -->
 @if (showModal()) {
-  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" (keydown.escape)="showModal.set(false)">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
       
       <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
@@ -299,7 +246,7 @@ This content will be used as context for the AI when generating requirements."
          <div class="space-y-4">
             <div>
                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
-               <input type="text" [(ngModel)]="newReqTitle" (keydown.enter)="saveManual()" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border" placeholder="e.g. User Login Page">
+               <input type="text" [(ngModel)]="newReqTitle" (keydown.enter)="saveManual()" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border" placeholder="e.g. User Login Page" autofocus>
             </div>
             <div>
                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>

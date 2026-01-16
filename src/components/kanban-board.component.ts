@@ -19,7 +19,6 @@ export class KanbanBoardComponent {
   dataService = inject(DataService);
   aiService = inject(AiService);
   
-  viewMode = signal<'board' | 'table' | 'docs' | 'sessions'>('board');
   searchTerm = signal('');
   showModal = signal(false);
   showAiModal = signal(false);
@@ -47,17 +46,21 @@ export class KanbanBoardComponent {
   includeInProgress = signal(false);
   pendingExportReqIds = signal<string[]>([]); // Store IDs to update status later
   
-  // Platform Data
-  platforms = Object.keys(AI_PLATFORMS);
-  availableModels = computed(() => AI_PLATFORMS[this.exportPlatform()] || []);
+  // Platform Data (Sorted)
+  platforms = Object.keys(AI_PLATFORMS).sort((a, b) => a.localeCompare(b));
+  availableModels = computed(() => {
+    const models = AI_PLATFORMS[this.exportPlatform()] || [];
+    return [...models].sort((a, b) => a.localeCompare(b));
+  });
 
   // Docs Editing State
   editableReadme = signal('');
   importMode: 'append' | 'replace' = 'append';
 
-  // System Folders State
+  // System Folders State (Sorted)
+  readonly folderCategories: FolderCategory[] = ['Library', 'Service', 'UI'];
   newFolderName = signal('');
-  newFolderCategory = signal<FolderCategory>('UI');
+  newFolderCategory = signal<FolderCategory>('Library');
   newFolderNote = signal('');
 
   // Computed Context
@@ -94,7 +97,7 @@ export class KanbanBoardComponent {
     
     // Set default model when platform changes
     effect(() => {
-        const models = AI_PLATFORMS[this.exportPlatform()];
+        const models = this.availableModels();
         if (models && models.length > 0) {
             this.exportModel.set(models[0]);
         }
@@ -127,7 +130,7 @@ export class KanbanBoardComponent {
         });
         this.newFolderName.set('');
         this.newFolderNote.set('');
-        this.newFolderCategory.set('UI');
+        this.newFolderCategory.set('Library');
     }
   }
 

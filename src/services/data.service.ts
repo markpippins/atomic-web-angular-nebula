@@ -37,6 +37,7 @@ export class DataService {
 
   // --- UI State ---
   readonly darkMode = signal<boolean>(false);
+  readonly viewMode = signal<'board' | 'table' | 'docs' | 'sessions'>('board');
 
   // --- Selection State ---
   readonly selectedSystemId = signal<string | null>(null);
@@ -278,6 +279,55 @@ export class DataService {
       }
       return sys;
     }));
+  }
+
+  // --- Rename Methods ---
+  updateSystemName(id: string, name: string) {
+    this.systems.update(systems => 
+        systems.map(sys => 
+            sys.id === id ? { ...sys, name } : sys
+        )
+    );
+  }
+
+  updateSubsystemName(systemId: string, subsystemId: string, name: string) {
+      this.systems.update(systems => 
+          systems.map(sys => {
+              if (sys.id === systemId) {
+                  return {
+                      ...sys,
+                      subsystems: sys.subsystems.map(sub => 
+                          sub.id === subsystemId ? { ...sub, name } : sub
+                      )
+                  };
+              }
+              return sys;
+          })
+      );
+  }
+
+  updateFeatureName(systemId: string, subsystemId: string, featureId: string, name: string) {
+      this.systems.update(systems => 
+          systems.map(sys => {
+              if (sys.id === systemId) {
+                  return {
+                      ...sys,
+                      subsystems: sys.subsystems.map(sub => {
+                          if (sub.id === subsystemId) {
+                              return {
+                                  ...sub,
+                                  features: sub.features.map(feat => 
+                                      feat.id === featureId ? { ...feat, name } : feat
+                                  )
+                              };
+                          }
+                          return sub;
+                      })
+                  };
+              }
+              return sys;
+          })
+      );
   }
 
   // --- Folder Management ---

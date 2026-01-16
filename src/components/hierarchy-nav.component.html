@@ -66,8 +66,19 @@
                <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm14 1a1 1 0 11-2 0 1 1 0 012 0zM2 13a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2zm14 1a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd" />
             </svg>
           </span>
-          <span class="font-semibold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{{ system.name }}</span>
+          @if (editingItem()?.id === system.id) {
+            <input type="text" [(ngModel)]="editingName" (keydown.enter)="saveEdit()" (keydown.escape)="cancelEdit()" (blur)="saveEdit()" class="flex-1 bg-transparent text-sm font-semibold border-b border-blue-500 focus:outline-none text-gray-800 dark:text-gray-200" autofocus>
+          } @else {
+            <span class="font-semibold text-gray-800 dark:text-gray-200 text-sm flex-1 truncate">{{ system.name }}</span>
+          }
           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              (click)="startEditing('System', system, $event)"
+              class="text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 p-1"
+              title="Rename System"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+            </button>
             <button 
               (click)="initiateMove('System', system, $event)"
               class="text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 p-1"
@@ -130,8 +141,19 @@
                     >
                 </div>
 
-                <span class="text-sm text-gray-600 dark:text-gray-300 truncate flex-1">{{ sub.name }}</span>
+                @if (editingItem()?.id === sub.id) {
+                  <input type="text" [(ngModel)]="editingName" (keydown.enter)="saveEdit()" (keydown.escape)="cancelEdit()" (blur)="saveEdit()" class="flex-1 bg-transparent text-sm border-b border-blue-500 focus:outline-none text-gray-600 dark:text-gray-300" autofocus>
+                } @else {
+                  <span class="text-sm text-gray-600 dark:text-gray-300 truncate flex-1">{{ sub.name }}</span>
+                }
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      (click)="startEditing('Subsystem', sub, $event, system.id)"
+                      class="text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 p-0.5"
+                      title="Rename Subsystem"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                    </button>
                     <button 
                       (click)="initiateMove('Subsystem', sub, $event)"
                       class="text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 p-0.5"
@@ -141,7 +163,7 @@
                     </button>
                    <button 
                       (click)="addingFeatureTo.set(sub.id); $event.stopPropagation()"
-                      class="text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 p-0.5"
+                      class="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-0.5"
                       title="Add Feature"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
@@ -180,8 +202,19 @@
                         (click)="selectFeature(system.id, sub.id, feat.id)"
                      >
                         <span class="w-1.5 h-1.5 rounded-full" [style.background-color]="sub.color || '#10B981'"></span>
-                        <span class="flex-1 truncate">{{ feat.name }}</span>
+                        @if (editingItem()?.id === feat.id) {
+                          <input type="text" [(ngModel)]="editingName" (keydown.enter)="saveEdit()" (keydown.escape)="cancelEdit()" (blur)="saveEdit()" class="flex-1 bg-transparent text-xs border-b border-blue-500 focus:outline-none text-blue-700 dark:text-blue-300" autofocus>
+                        } @else {
+                          <span class="flex-1 truncate">{{ feat.name }}</span>
+                        }
                          <div class="opacity-0 group-hover:opacity-100 flex gap-0.5">
+                            <button 
+                              (click)="startEditing('Feature', feat, $event, system.id, sub.id)"
+                              class="text-gray-300 dark:text-gray-600 hover:text-green-500 dark:hover:text-green-400"
+                              title="Rename Feature"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                            </button>
                             <button 
                               (click)="initiateMove('Feature', feat, $event)"
                               class="text-gray-300 dark:text-gray-600 hover:text-purple-500 dark:hover:text-purple-400"
@@ -228,7 +261,7 @@
                       [(ngModel)]="targetSystemIdForFeature" 
                       class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border text-sm"
                   >
-                      @for(sys of dataService.systems(); track sys.id) {
+                      @for(sys of dataService.sortedSystems(); track sys.id) {
                           <option [value]="sys.id">{{ sys.name }}</option>
                       }
                   </select>
