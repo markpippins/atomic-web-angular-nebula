@@ -421,7 +421,7 @@ export class KanbanBoardComponent {
     this.exportContextText.set(content);
   }
 
-  saveExportSession() {
+  saveExportSession(action: 'copy' | 'download') {
       // 1. Save to DB
       this.dataService.addWorkSession({
           parentId: this.exportParentId(),
@@ -432,22 +432,47 @@ export class KanbanBoardComponent {
           model: this.exportModel(),
           status: 'Pending'
       });
-
-      // 2. Copy to Clipboard
-      navigator.clipboard.writeText(this.exportContextText()).then(() => {
-          alert('Session Created! Context copied to clipboard.');
-      }).catch(err => {
-          console.error('Copy failed', err);
-          alert('Session Created, but failed to copy text automatically.');
-      });
       
-      // 3. Update Requirements Status
-      // "exporting context should move all associated requirements the In Progress status."
+      // 2. Update Requirements Status
       if (this.pendingExportReqIds().length > 0) {
           this.dataService.batchUpdateRequirementStatus(this.pendingExportReqIds(), 'InProgress');
       }
 
+      // 3. Perform action: copy or download
+      if (action === 'copy') {
+          navigator.clipboard.writeText(this.exportContextText()).then(() => {
+              alert('Session Created! Context copied to clipboard.');
+          }).catch(err => {
+              console.error('Copy failed', err);
+              alert('Session Created, but failed to copy text automatically.');
+          });
+      } else { // 'download'
+          this.downloadContextAsFile();
+      }
+
       // 4. Close & Reset
       this.showExportModal.set(false);
+  }
+
+  private downloadContextAsFile() {
+    const context = this.exportContextText();
+    const parentName = this.exportParentName()
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/[^a-zA-Z0-9_]/g, '') // Remove non-alphanumeric chars
+      .slice(0, 50);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `nebula-session-${parentName}-${timestamp}.md`;
+    
+    const blob = new Blob([context], { type: 'text/markdown;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a); // Required for Firefox
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    alert('Session Created! Context file is downloading.');
   }
 }

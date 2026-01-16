@@ -22,6 +22,10 @@ export class HierarchyNavComponent {
   newSubsystemName = '';
   newFeatureName = '';
 
+  // --- Collapsible State ---
+  collapsedSystems = signal(new Set<string>());
+  collapsedSubsystems = signal(new Set<string>());
+
   // --- Inline Editing State ---
   editingItem = signal<{ type: 'System' | 'Subsystem' | 'Feature', id: string, systemId?: string, subsystemId?: string } | null>(null);
   editingName = signal('');
@@ -42,18 +46,46 @@ export class HierarchyNavComponent {
     this.dataService.selectedSystemId.set(id);
     this.dataService.selectedSubsystemId.set(null);
     this.dataService.selectedFeatureId.set(null);
+    // Expand when selected
+    this.collapsedSystems.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(id);
+      return newSet;
+    });
   }
 
   selectSubsystem(systemId: string, subId: string) {
     this.dataService.selectedSystemId.set(systemId);
     this.dataService.selectedSubsystemId.set(subId);
     this.dataService.selectedFeatureId.set(null);
+    // Expand subsystem and its parent system
+    this.collapsedSystems.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(systemId);
+      return newSet;
+    });
+    this.collapsedSubsystems.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(subId);
+      return newSet;
+    });
   }
 
   selectFeature(systemId: string, subId: string, featureId: string) {
     this.dataService.selectedSystemId.set(systemId);
     this.dataService.selectedSubsystemId.set(subId);
     this.dataService.selectedFeatureId.set(featureId);
+     // Expand parents
+     this.collapsedSystems.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(systemId);
+      return newSet;
+    });
+    this.collapsedSubsystems.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(subId);
+      return newSet;
+    });
   }
 
   createSystem() {
@@ -124,6 +156,42 @@ export class HierarchyNavComponent {
       this.dataService.deleteFeature(systemId, subId, featId);
     }
   }
+
+  // --- Collapsible Logic ---
+  toggleSystem(id: string, event: Event) {
+    event.stopPropagation();
+    this.collapsedSystems.update(set => {
+      const newSet = new Set(set);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
+  isSystemCollapsed(id: string): boolean {
+    return this.collapsedSystems().has(id);
+  }
+
+  toggleSubsystem(id: string, event: Event) {
+    event.stopPropagation();
+    this.collapsedSubsystems.update(set => {
+      const newSet = new Set(set);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
+  isSubsystemCollapsed(id: string): boolean {
+    return this.collapsedSubsystems().has(id);
+  }
+
 
   // --- Inline Editing Logic ---
   startEditing(
