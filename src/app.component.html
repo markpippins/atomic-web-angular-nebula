@@ -53,12 +53,21 @@
   </div>
   
   <!-- Sidebar -->
-  <aside class="w-72 flex-shrink-0 h-full">
+  <aside 
+    class="flex-shrink-0 h-full"
+    [style.width.px]="sidebarWidth()"
+  >
     <app-hierarchy-nav></app-hierarchy-nav>
   </aside>
 
+  <!-- Splitter -->
+  <div 
+    class="w-1.5 h-full cursor-col-resize flex-shrink-0 bg-gray-200/50 dark:bg-gray-700/50 hover:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200 z-10"
+    (mousedown)="startResize($event)"
+  ></div>
+
   <!-- Main Content -->
-  <main class="flex-1 h-full bg-gray-50 dark:bg-gray-900 relative transition-colors">
+  <main class="flex-1 h-full bg-gray-50 dark:bg-gray-900 relative transition-colors min-w-0">
     <app-kanban-board></app-kanban-board>
   </main>
 </div>
