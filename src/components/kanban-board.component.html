@@ -77,12 +77,14 @@
            [requirements]="filteredRequirements()"
            (editReq)="openEditModal($event)"
            (copyReqPrompt)="copyPrompt($event)"
+           (duplicateReq)="openDuplicateModal($event)"
          ></app-board-view>
       } @else if (dataService.viewMode() === 'table') {
          <app-table-view 
            [requirements]="filteredRequirements()" 
            (editReq)="openEditModal($event)"
            (copyReqPrompt)="copyPrompt($event)"
+           (duplicateReq)="openDuplicateModal($event)"
          ></app-table-view>
       } @else if (dataService.viewMode() === 'sessions') {
          <app-work-session-view></app-work-session-view>
@@ -230,20 +232,66 @@ This content will be used as context for the AI when generating requirements."
 
 <!-- Create/Edit Modal -->
 @if (showModal()) {
-  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" (keydown.escape)="showModal.set(false)">
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" (keydown.escape)="closeModal()">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
       
       <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
          <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">
-             @if (editingReqId()) { Edit Requirement } @else { Create Requirement }
+             @if (editingReqId()) { Edit Requirement }
+             @else if (isDuplicating()) { Duplicate Requirement }
+             @else { Create Requirement }
          </h2>
-         <button (click)="showModal.set(false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+         <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
          </button>
       </div>
 
       <div class="p-6 overflow-y-auto">
          <div class="space-y-4">
+            <!-- HIERARCHY SELECTORS -->
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">System</label>
+                    <select 
+                        [ngModel]="modalSystemId()" 
+                        (ngModelChange)="onModalSystemChange($event)" 
+                        class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
+                    >
+                        @for(sys of dataService.sortedSystems(); track sys.id) {
+                            <option [value]="sys.id">{{ sys.name }}</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subsystem</label>
+                    <select 
+                        [ngModel]="modalSubsystemId()" 
+                        (ngModelChange)="onModalSubsystemChange($event)" 
+                        [disabled]="!modalAvailableSubsystems().length" 
+                        class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border disabled:bg-gray-100 dark:disabled:bg-gray-700/50"
+                    >
+                        @for(sub of modalAvailableSubsystems(); track sub.id) {
+                            <option [value]="sub.id">{{ sub.name }}</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Feature</label>
+                    <select 
+                        [ngModel]="modalFeatureId()" 
+                        (ngModelChange)="modalFeatureId.set($event)" 
+                        [disabled]="!modalAvailableFeatures().length" 
+                        class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border disabled:bg-gray-100 dark:disabled:bg-gray-700/50"
+                    >
+                        @for(feat of modalAvailableFeatures(); track feat.id) {
+                            <option [value]="feat.id">{{ feat.name }}</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4"></div>
+
             <div>
                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
                <input type="text" [(ngModel)]="newReqTitle" (keydown.enter)="saveManual()" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border" placeholder="e.g. User Login Page" autofocus>
@@ -265,9 +313,11 @@ This content will be used as context for the AI when generating requirements."
       </div>
       
       <div class="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
-         <button (click)="showModal.set(false)" class="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
-         <button (click)="saveManual()" [disabled]="!newReqTitle" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600">
-            @if (editingReqId()) { Save Changes } @else { Create Requirement }
+         <button (click)="closeModal()" class="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+         <button (click)="saveManual()" [disabled]="!newReqTitle || !modalFeatureId()" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600">
+            @if (editingReqId()) { Save Changes }
+            @else if (isDuplicating()) { Duplicate Requirement }
+            @else { Create Requirement }
          </button>
       </div>
 

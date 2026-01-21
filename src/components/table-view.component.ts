@@ -15,6 +15,7 @@ export class TableViewComponent {
   requirements = input.required<Requirement[]>();
   editReq = output<Requirement>();
   copyReqPrompt = output<Requirement>();
+  duplicateReq = output<Requirement>();
   
   sortField = signal<keyof Requirement | 'date'>('date');
   sortDirection = signal<'asc' | 'desc'>('desc');
@@ -77,6 +78,11 @@ export class TableViewComponent {
   onCopy(req: Requirement, event: Event) {
     event.stopPropagation();
     this.copyReqPrompt.emit(req);
+  }
+
+  onDuplicate(req: Requirement, event: Event) {
+    event.stopPropagation();
+    this.duplicateReq.emit(req);
   }
 
   deleteReq(id: string, event: Event) {

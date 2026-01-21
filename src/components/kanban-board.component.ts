@@ -28,9 +28,14 @@ export class KanbanBoardComponent {
 
   // Form State
   editingReqId = signal<string | null>(null);
+  isDuplicating = signal(false);
   newReqTitle = '';
   newReqDesc = '';
   newReqPriority: 'Low' | 'Medium' | 'High' = 'Medium';
+  // New modal state for hierarchy selection
+  modalSystemId = signal<string | null>(null);
+  modalSubsystemId = signal<string | null>(null);
+  modalFeatureId = signal<string | null>(null);
   
   // AI Form State
   userStoryPrompt = '';
@@ -76,6 +81,23 @@ export class KanbanBoardComponent {
   selectedFeature = computed(() => {
     const sub = this.selectedSubsystem();
     return sub?.features.find(f => f.id === this.dataService.selectedFeatureId());
+  });
+
+  // Computed properties for modal dropdowns
+  modalAvailableSubsystems = computed(() => {
+      const sysId = this.modalSystemId();
+      if (!sysId) return [];
+      const system = this.dataService.systems().find(s => s.id === sysId);
+      return system ? system.subsystems : [];
+  });
+
+  modalAvailableFeatures = computed(() => {
+      const sysId = this.modalSystemId();
+      const subId = this.modalSubsystemId();
+      if (!sysId || !subId) return [];
+      const system = this.dataService.systems().find(s => s.id === sysId);
+      const subsystem = system?.subsystems.find(s => s.id === subId);
+      return subsystem ? subsystem.features : [];
   });
 
   // Current Documentation based on selection level
@@ -204,19 +226,53 @@ export class KanbanBoardComponent {
 
   canAddRequirement = computed(() => !!this.selectedFeature());
 
+  closeModal() {
+    this.showModal.set(false);
+    this.isDuplicating.set(false);
+  }
+
   openAddModal() {
     this.editingReqId.set(null);
+    this.isDuplicating.set(false);
     this.newReqTitle = '';
     this.newReqDesc = '';
     this.newReqPriority = 'Medium';
+
+    // Pre-fill with current context
+    this.modalSystemId.set(this.dataService.selectedSystemId());
+    this.modalSubsystemId.set(this.dataService.selectedSubsystemId());
+    this.modalFeatureId.set(this.dataService.selectedFeatureId());
+
     this.showModal.set(true);
   }
 
   openEditModal(req: Requirement) {
     this.editingReqId.set(req.id);
+    this.isDuplicating.set(false);
     this.newReqTitle = req.title;
     this.newReqDesc = req.description;
     this.newReqPriority = req.priority;
+
+    // Pre-fill with requirement's own context
+    this.modalSystemId.set(req.systemId);
+    this.modalSubsystemId.set(req.subsystemId);
+    this.modalFeatureId.set(req.featureId);
+
+    this.showModal.set(true);
+  }
+
+  openDuplicateModal(req: Requirement) {
+    this.editingReqId.set(null); // Ensure we are in create mode
+    this.isDuplicating.set(true);
+
+    this.newReqTitle = `${req.title} (Copy)`;
+    this.newReqDesc = req.description;
+    this.newReqPriority = req.priority;
+
+    this.modalSystemId.set(req.systemId);
+    this.modalSubsystemId.set(req.subsystemId);
+    this.modalFeatureId.set(req.featureId);
+
     this.showModal.set(true);
   }
 
@@ -278,33 +334,54 @@ export class KanbanBoardComponent {
     }
   }
 
+  // --- Modal Logic ---
+
+  onModalSystemChange(systemId: string) {
+    this.modalSystemId.set(systemId);
+    // Cascade reset/update
+    const availableSubs = this.modalAvailableSubsystems();
+    this.onModalSubsystemChange(availableSubs.length > 0 ? availableSubs[0].id : null);
+  }
+
+  onModalSubsystemChange(subsystemId: string | null) {
+      this.modalSubsystemId.set(subsystemId);
+      // Cascade reset/update
+      const availableFeats = this.modalAvailableFeatures();
+      this.modalFeatureId.set(availableFeats.length > 0 ? availableFeats[0].id : null);
+  }
+
   saveManual() {
-    // Edit mode
-    const editId = this.editingReqId();
-    if (editId) {
-        this.dataService.updateRequirement(editId, {
-            title: this.newReqTitle,
-            description: this.newReqDesc,
-            priority: this.newReqPriority
-        });
-        this.showModal.set(false);
+    const sysId = this.modalSystemId();
+    const subId = this.modalSubsystemId();
+    const featId = this.modalFeatureId();
+
+    if (!sysId || !subId || !featId) {
+        alert("A requirement must be linked to a System, Subsystem, and Feature.");
         return;
     }
 
-    // Create mode
-    const feat = this.selectedFeature();
-    if (!feat) return;
+    const payload = {
+        title: this.newReqTitle,
+        description: this.newReqDesc,
+        priority: this.newReqPriority,
+        systemId: sysId,
+        subsystemId: subId,
+        featureId: featId
+    };
 
-    this.dataService.addRequirement({
-      title: this.newReqTitle,
-      description: this.newReqDesc,
-      priority: this.newReqPriority,
-      status: 'Backlog',
-      systemId: this.dataService.selectedSystemId()!,
-      subsystemId: this.dataService.selectedSubsystemId()!,
-      featureId: feat.id
-    });
-    this.showModal.set(false);
+    // Edit mode
+    const editId = this.editingReqId();
+    if (editId) {
+        this.dataService.updateRequirement(editId, payload);
+    } else {
+        // Create or Duplicate mode
+        this.dataService.addRequirement({
+            ...payload,
+            status: 'Backlog',
+        });
+    }
+    
+    this.closeModal();
   }
 
   // --- Export Logic ---

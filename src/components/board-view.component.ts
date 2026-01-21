@@ -15,6 +15,7 @@ export class BoardViewComponent {
   requirements = input.required<Requirement[]>();
   copyReqPrompt = output<Requirement>();
   editReq = output<Requirement>();
+  duplicateReq = output<Requirement>();
 
   columns: Status[] = ['Backlog', 'ToDo', 'InProgress', 'Done'];
   draggedReqId: string | null = null;
@@ -53,6 +54,11 @@ export class BoardViewComponent {
   onEdit(req: Requirement, event: Event) {
       event.stopPropagation();
       this.editReq.emit(req);
+  }
+
+  onDuplicate(req: Requirement, event: Event) {
+    event.stopPropagation();
+    this.duplicateReq.emit(req);
   }
 
   // --- Drag and Drop Logic ---
